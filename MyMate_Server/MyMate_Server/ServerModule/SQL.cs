@@ -1,4 +1,6 @@
-﻿using MySql.Data.MySqlClient;
+﻿using Google.Protobuf.WellKnownTypes;
+using MySql.Data.MySqlClient;
+using MySqlX.XDevAPI.Relational;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -31,7 +33,7 @@ namespace MyMate_Server.ServerModule
         /// <param name="password">DB 비밀번호</param>
         /// <param name="sslmode">DB sslmode</param>
         /// <returns></returns>
-        private static MySqlConnection Connect(
+        private MySqlConnection Connect(
             string user,
             string database,
             string password,
@@ -98,6 +100,8 @@ namespace MyMate_Server.ServerModule
             return true;
         }
 
+
+        // 미사용
         /// <summary>
         /// DB에 Insert 구문을 수행하는 메서드
         /// </summary>
@@ -138,27 +142,27 @@ namespace MyMate_Server.ServerModule
         /// <summary>
         /// DB에서 회원가입에 필요한 프로시저를 실행시키는 메서드
         /// </summary>
-        /// <param name="value">사용자의 입력정보</param>
+        /// <param name="value">사용자의 입력정보, SQL insert문 values절에 들어갈 값들</param>
         /// <param name="conn">DB connection 객체</param>
         /// <returns></returns>
-        private bool CallSqlProcedure(
+        private bool CallSigninSP(
             string value,
             MySqlConnection conn
          )
         {
             try
             {
-                // Procedure를 수행 쿼리 
+                // SQL 회원가입 Procedure를 수행 쿼리 
                 string ProcedureString = $"call Pro_user_in({value});";
 
                 // command : 쿼리를 수행하는 객체
                 MySqlCommand msc = new MySqlCommand(ProcedureString, conn);
 
                 // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
-                /*if (msc.ExecuteNonQuery() == 0)
+                if (msc.ExecuteNonQuery() == 0)
                 {
                     throw new NODATAEXCEPTION();
-                }*/
+                }
             }
             catch (NODATAEXCEPTION noDataException)
             {
@@ -170,6 +174,7 @@ namespace MyMate_Server.ServerModule
             return true;
         }
 
+        // 미사용
         /// <summary>
         /// DB에 Select 구문을 수행하는 메서드
         /// </summary>
@@ -221,27 +226,22 @@ namespace MyMate_Server.ServerModule
         /// <summary>
         /// DB에서 로그인에 필요한 함수를 실행시키는 메서드
         /// </summary>
-        /// <param name="id">입력되는 id값</param>
-        /// <param name="pw">입력되는 pw값</param>
+        /// <param name="id">사용자가 입력하는 id값</param>
+        /// <param name="pw">사용자가 입력하는 pw값</param>
         /// <param name="conn">DB connection 객체</param>
         /// <returns></returns>
-
-        private bool CallSqlFunction(
+        private bool CallLoginSF(
             string id,
             string pw,
             MySqlConnection conn
         )
         {
-            // Select문을 반환하기 위한 데이터 테이블
-            var datatable = new DataTable();
-
             try
             {
-                // Select 문을 수행 쿼리
+                // SQL 로그인 Fuction 수행 쿼리
                 string FunctionString = $"SELECT F_Login('{id}','{pw}')";
 
                 // command : 쿼리를 수행하는 객체
-                // datareader : 쿼리 수행 결과를 가져오는 객체
                 MySqlCommand msc = new MySqlCommand(FunctionString, conn);
 
                 if (msc.ExecuteNonQuery() == 0)
@@ -259,6 +259,107 @@ namespace MyMate_Server.ServerModule
             return true;
         }
 
+        private DataTable CallGetUserinfoSP(
+            string id,
+            MySqlConnection conn
+        )
+        {
+            // SQL Procedure 결과를 저장할 데이터 테이블 객체
+            var datatable = new DataTable();
+
+            try
+            {
+                // SQL 회원정보를 가져오는 Procedure 수행 쿼리
+                string query = $"call p_set_sel('{id}');";
+
+                // MySqlDataAdapter : 쿼리 수행 결과를 가져오는 객체
+                using (var mda = new MySqlDataAdapter(query, conn))
+                {
+                    if (mda != null)
+                    {
+                        mda.Fill(datatable);
+                    }
+                    // null일경우 예외처리 필요함
+                }
+
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Select문이 수행되지 않았을 경우
+
+                return null;
+            }
+
+            return datatable;
+        }
+
+        private DataTable CallGetProfileinfoSP(
+            string id,
+            MySqlConnection conn
+        )
+        {
+            // SQL Procedure 결과를 저장하기위한 데이터 테이블 객체
+            var datatable = new DataTable();
+
+            try
+            {
+                // Select 문을 수행 쿼리
+                string query = $"call p_pr_sel('{id}');";
+
+                //// command : 쿼리를 수행하는 객체
+                //// datareader : 쿼리 수행 결과를 가져오는 객체
+                //MySqlCommand msc = new MySqlCommand(query, conn);
+
+                using (var mda = new MySqlDataAdapter(query, conn))
+                {
+                    if (mda != null)
+                    {
+                        mda.Fill(datatable);
+                    }
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Select문이 수행되지 않았을 경우
+
+                return null;
+            }
+
+            return datatable;
+        }
+
+        private bool CallSetUserinfoSP(
+            string id,
+            string value,
+            MySqlConnection conn
+        )
+        {
+            try
+            {
+                // SQL 회원정보 수정 Procedure를 수행 쿼리 
+                string ProcedureString = $"call p_set_up('{id}',{value});";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(ProcedureString, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Procedure가 수행되지 않았을 경우
+
+                return false;
+            }
+
+            return true;
+        }
+
+        // ==============================================인터페이스==============================================
+
         /// <summary>
         /// 회원가입을 위한 데이터들의 유효성 검사를 하여 회원가입하는 메서드
         /// </summary>
@@ -269,7 +370,7 @@ namespace MyMate_Server.ServerModule
         /// <param name="phone">회원 전화번호</param>
         /// <param name="conn">DB connection 객체</param>
         /// <returns></returns>
-        public bool SignIn(
+        public bool Signin(
             string id,
             string pw,
             string name,
@@ -327,7 +428,7 @@ namespace MyMate_Server.ServerModule
                 }
 
                 // 매개변수 값들의 이상이 없다면 수행 되는 과정
-                okSignIn = SignInInsert(id, pw, name, nick, phone);
+                okSignIn = SigninInsert(id, pw, name, nick, phone);
 
             } while (false);
 
@@ -343,7 +444,7 @@ namespace MyMate_Server.ServerModule
         /// <param name="nick">회원 별명</param>
         /// <param name="phone">회원 전화번호</param>
         /// <returns></returns>
-        private bool SignInInsert(
+        private bool SigninInsert(
             string id,
             string pw,
             string name,
@@ -364,7 +465,7 @@ namespace MyMate_Server.ServerModule
                 MySqlConnection conn = UserConnect();
 
                 // Insert문 수행
-                okInsert = CallSqlProcedure(value, conn);
+                okInsert = CallSigninSP(value, conn);
 
                 // DB 닫기
                 if (!ConnClose(conn))
@@ -388,7 +489,10 @@ namespace MyMate_Server.ServerModule
         /// <param name="id">회원이 입력한 id</param>
         /// <param name="pw">회원이 입력한 pw</param>
         /// <returns></returns>
-        public bool Login(string id, string pw)
+        public bool Login(
+            string id, 
+            string pw
+        )
         {
             try
             {
@@ -396,7 +500,7 @@ namespace MyMate_Server.ServerModule
                 MySqlConnection conn = UserConnect();
 
                 // SQL Login Functio 수행
-                if (CallSqlFunction(id, pw, conn) != true)
+                if (CallLoginSF(id, pw, conn) != true)
                 {
                     // SQL함수가 정상 작동 하지 못했을 때
                     return false;
@@ -419,34 +523,167 @@ namespace MyMate_Server.ServerModule
             return true;
         }
 
-        // 미정
-        private int CheckPw(string id, string pw)
+        public bool GetUserInfo(
+            string id
+        )
         {
-            // 0	: 존재하지 않는 id
-            // 1	: 성공
-            // -1	: 에러 또는 예외 발생 
-            int check = 0;
+            try
+            {
+                // DB 연결
+                MySqlConnection conn = UserConnect();
+
+                DataTable dt = CallGetUserinfoSP(id, conn);
+
+                //Console.WriteLine(tb.Rows[0]["U_password"]);
+
+                // SQL Procedure 수행
+                if (dt == null)
+                {
+                    // SQL함수가 정상 작동 하지 못했을 때
+                    return false;
+                }
+
+                // DB 닫기
+                if (!ConnClose(conn))
+                {
+                    throw new NOTCLOSEEXCEPTION();
+                }
+
+            }
+            catch (NOTCLOSEEXCEPTION notCloseException)
+            {
+                // conn close를 실패했을 때
+
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool GetProfileInfo(
+            string id
+        )
+        {
+            try
+            {
+                // DB 연결
+                MySqlConnection conn = UserConnect();
+
+                DataTable dt = CallGetProfileinfoSP(id, conn);
+
+                //Console.WriteLine(tb.Rows[0]["U_name"]);
+
+                // SQL Procedure 수행
+                if (dt == null)
+                {
+                    // SQL함수가 정상 작동 하지 못했을 때
+                    return false;
+                }
+
+                // DB 닫기
+                if (!ConnClose(conn))
+                {
+                    throw new NOTCLOSEEXCEPTION();
+                }
+
+            }
+            catch (NOTCLOSEEXCEPTION notCloseException)
+            {
+                // conn close를 실패했을 때
+
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool Modify(
+            string id,
+            string pw,
+            string name,
+            string nick,
+            string phone
+        )
+        {
+            // 예외 경우일 경우 do-while 문을 탈출하여 return 하므로 디폴트를 false로 설정
+            bool okSignIn = false;
+
+            do
+            {
+                // 매개변수 값들의 null 체크
+                if (id == null)
+                {
+                    break;
+                }
+                if (pw == null)
+                {
+                    break;
+                }
+                if (name == null)
+                {
+                    break;
+                }
+                if (nick == null)
+                {
+                    break;
+                }
+                if (phone == null)
+                {
+                    break;
+                }
+
+                // 매개변수 값들의 공백을 체크
+                if (id == "")
+                {
+                    break;
+                }
+                if (pw == "")
+                {
+                    break;
+                }
+                if (name == "")
+                {
+                    break;
+                }
+                if (nick == "")
+                {
+                    break;
+                }
+                if (phone == "")
+                {
+                    break;
+                }
+
+                // 매개변수 값들의 이상이 없다면 수행 되는 과정
+                okSignIn = ModifyInsert(id, pw, name, nick, phone);
+
+            } while (false);
+
+            return okSignIn;
+        }
+
+        private bool ModifyInsert(
+            string id,
+            string pw,
+            string name,
+            string nick,
+            string phone
+        )
+        {
+            // 결과값을 반환하는 변수
+            bool okInsert = true;
+
+            // Insert values 절
+            string value = $"'{pw}','{nick}','{name}','{phone}'";
+
 
             try
             {
                 // DB 연결
                 MySqlConnection conn = UserConnect();
 
-                // id값에 해당하는 비밀번호 가져오기
-                string select_pw = SelectPw(id, conn);
-
-                if (select_pw == null)  // id가 없을때
-                {
-                    check = 0;
-                }
-                else if (pw == select_pw)   // pw가 일치할 때
-                {
-                    check = 1;
-                }
-                else    // 그외의 예외
-                {
-                    check = -1;
-                }
+                // Insert문 수행
+                okInsert = CallSetUserinfoSP(id,value, conn);
 
                 // DB 닫기
                 if (!ConnClose(conn))
@@ -454,57 +691,14 @@ namespace MyMate_Server.ServerModule
                     throw new NOTCLOSEEXCEPTION();
                 }
             }
-            catch (NOTCLOSEEXCEPTION notCloseException)
+            catch (NOTCLOSEEXCEPTION noDataException)
             {
                 // conn close를 실패했을 때
 
-                return -1;
+                return false;
             }
 
-            return check;
-        }
-
-        private string SelectPw(string id, MySqlConnection conn)
-        {
-            string selectPw = null;
-
-            try
-            {
-                // DB 연결
-                conn = UserConnect();
-
-                // Select문 수행
-                DataTable dt = SqlSelect("user_tb", $"U_id = '{id}'", conn);
-
-                // id 일치 확인
-                if (id == dt.Rows[0]["U_id"].ToString())
-                {
-                    // pw를 문자열 변수에 저장 
-                    selectPw = dt.Rows[0]["U_password"].ToString();
-                }
-                else
-                {
-                    throw new NOIDEXCEPTION();
-                }
-
-                // DB 닫기
-                if (!ConnClose(conn))
-                {
-                    throw new NOTCLOSEEXCEPTION();
-                }
-            }
-            catch (NOTCLOSEEXCEPTION notCloseException)
-            {
-                // conn close를 실패했을 때
-
-                return null;
-            }
-            catch (NOIDEXCEPTION noIdException)
-            {
-                return null;
-            }
-
-            return selectPw;
+            return okInsert;
         }
     }
 }
