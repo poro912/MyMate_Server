@@ -179,6 +179,12 @@ namespace MyMate_Server.ServerModule
             return true;
         }
 
+        /// <summary>
+        /// DB에서 회원정보를 가져오는 프로시저를 실행시키는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
         private DataTable CallGetUserinfoSP(
             string id,
             MySqlConnection conn
@@ -213,6 +219,12 @@ namespace MyMate_Server.ServerModule
             return datatable;
         }
 
+        /// <summary>
+        /// DB에서 프로필정보를 가져오는 프로시저를 실행시키는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="conn">DB connectnion 객체</param>
+        /// <returns></returns>
         private DataTable CallGetProfileinfoSP(
             string id,
             MySqlConnection conn
@@ -248,6 +260,12 @@ namespace MyMate_Server.ServerModule
             return datatable;
         }
 
+        /// <summary>
+        /// 수정된 회원정보를 DB에 저장하는 프로시저를 실행시키는 메서드
+        /// </summary>
+        /// <param name="value">회원정보</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
         private bool CallSetUserinfoSP(
             string value,
             MySqlConnection conn
@@ -417,7 +435,7 @@ namespace MyMate_Server.ServerModule
             string name,
             string nick,
             string phone
-)
+        )
         {
             // 결과값을 반환하는 변수
             bool okInsert = true;
@@ -490,6 +508,11 @@ namespace MyMate_Server.ServerModule
             return true;
         }
 
+        /// <summary>
+        /// id값 입력을 통해서 사용자의 회원정보를 가져오는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <returns></returns>
         public bool GetUserInfo(
             string id
         )
@@ -527,6 +550,11 @@ namespace MyMate_Server.ServerModule
             return true;
         }
 
+        /// <summary>
+        /// id값을 입력을 통해서 사용자의 프로필정보를 가져오는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <returns></returns>
         public bool GetProfileInfo(
             string id
         )
