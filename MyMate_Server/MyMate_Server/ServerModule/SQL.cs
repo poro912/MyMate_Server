@@ -7,6 +7,7 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace MyMate_Server.ServerModule
 {
@@ -21,6 +22,13 @@ namespace MyMate_Server.ServerModule
     class NOIDEXCEPTION : Exception
     {
     }
+
+    public delegate bool CheckInDelegaate(
+            string id,
+            string pw,
+            string name,
+            string nick,
+            string phone);
 
     public class SQL
     {
@@ -100,45 +108,6 @@ namespace MyMate_Server.ServerModule
             return true;
         }
 
-
-        // 미사용
-        /// <summary>
-        /// DB에 Insert 구문을 수행하는 메서드
-        /// </summary>
-        /// <param name="table">Insert하려는 테이블</param>
-        /// <param name="value">Insert할때 조건절(insert문에서 values 키워드 이후 전부 작성)</param>
-        /// <param name="conn">DB connection 객체</param>
-        /// <returns></returns>
-        private bool SqlInsert(
-            string table,
-            string value,
-            MySqlConnection conn
-         )
-        {
-            try
-            {
-                // Insert 문을 수행 쿼리 
-                string query = $"INSERT INTO {table} VALUES ({value})";
-
-                // command : 쿼리를 수행하는 객체
-                MySqlCommand msc = new MySqlCommand(query, conn);
-
-                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
-                if (msc.ExecuteNonQuery() == 0)
-                {
-                    throw new NODATAEXCEPTION();
-                }
-            }
-            catch (NODATAEXCEPTION noDataException)
-            {
-                // Insert문이 수행되지 않았을 경우
-
-                return false;
-            }
-
-            return true;
-        }
-
         /// <summary>
         /// DB에서 회원가입에 필요한 프로시저를 실행시키는 메서드
         /// </summary>
@@ -172,55 +141,6 @@ namespace MyMate_Server.ServerModule
             }
 
             return true;
-        }
-
-        // 미사용
-        /// <summary>
-        /// DB에 Select 구문을 수행하는 메서드
-        /// </summary>
-        /// <param name="table">Select하려는 테이블</param>
-        /// <param name="condition">Select할때 조건절(select문에서 where키워드 이후 전부 작성)</param>
-        /// <param name="conn">DB connection 객체</param>
-        /// <returns></returns>
-        private DataTable SqlSelect(
-            string table,
-            string condition,
-            MySqlConnection conn
-        )
-        {
-            // Select문을 반환하기 위한 데이터 테이블
-            var datatable = new DataTable();
-
-            try
-            {
-                // Select 문을 수행 쿼리
-                string query = $"SELECT * FROM {table} WHERE {condition}";
-
-                // command : 쿼리를 수행하는 객체
-                // datareader : 쿼리 수행 결과를 가져오는 객체
-                MySqlCommand msc = new MySqlCommand(query, conn);
-
-                if (msc.ExecuteNonQuery() == 0)
-                {
-                    throw new NODATAEXCEPTION();
-                }
-                else
-                {
-                    // ExecuteReader() 메서드는 DataReader를 만들어줌
-                    MySqlDataReader msdr = msc.ExecuteReader();
-
-                    // Load() 메서드는 DataReader를 통해 DataTable을 채움
-                    datatable.Load(msdr);
-                }
-            }
-            catch (NODATAEXCEPTION noDataException)
-            {
-                // Select문이 수행되지 않았을 경우
-
-                return null;
-            }
-
-            return datatable;
         }
 
         /// <summary>
@@ -329,7 +249,6 @@ namespace MyMate_Server.ServerModule
         }
 
         private bool CallSetUserinfoSP(
-            string id,
             string value,
             MySqlConnection conn
         )
@@ -337,7 +256,7 @@ namespace MyMate_Server.ServerModule
             try
             {
                 // SQL 회원정보 수정 Procedure를 수행 쿼리 
-                string ProcedureString = $"call p_set_up('{id}',{value});";
+                string ProcedureString = $"call p_set_up({value});";
 
                 // command : 쿼리를 수행하는 객체
                 MySqlCommand msc = new MySqlCommand(ProcedureString, conn);
@@ -361,22 +280,22 @@ namespace MyMate_Server.ServerModule
         // ==============================================인터페이스==============================================
 
         /// <summary>
-        /// 회원가입을 위한 데이터들의 유효성 검사를 하여 회원가입하는 메서드
+        /// 클라이언트에서 넘어온 회원정보의 유효성을 확인하는 메서드
         /// </summary>
-        /// <param name="id">회원 id</param>
-        /// <param name="pw">회원 password</param>
-        /// <param name="name">회원 이름</param>
-        /// <param name="nick">회원 별명</param>
-        /// <param name="phone">회원 전화번호</param>
-        /// <param name="conn">DB connection 객체</param>
+        /// <param name="id">클라이언트에서 보낸 아이디</param>
+        /// <param name="pw">클라이언트에서 보낸 비밀번호</param>
+        /// <param name="name">클라이언트에서 보낸 이름</param>
+        /// <param name="nick">클라이언트에서 보낸 별칭</param>
+        /// <param name="phone">클라이언트에서 보낸 전화번호</param>
+        /// <param name="checkInMethod">회원정보의 유효성 확인 후 실행할 메서드</param>
         /// <returns></returns>
-        public bool Signin(
+        public bool Check(
             string id,
             string pw,
             string name,
             string nick,
-            string phone
-        )
+            string phone,
+            CheckInDelegaate checkInMethod)
         {
             // 예외 경우일 경우 do-while 문을 탈출하여 return 하므로 디폴트를 false로 설정
             bool okSignIn = false;
@@ -428,7 +347,7 @@ namespace MyMate_Server.ServerModule
                 }
 
                 // 매개변수 값들의 이상이 없다면 수행 되는 과정
-                okSignIn = SigninInsert(id, pw, name, nick, phone);
+                okSignIn = checkInMethod(id, pw, name, nick, phone);
 
             } while (false);
 
@@ -444,7 +363,7 @@ namespace MyMate_Server.ServerModule
         /// <param name="nick">회원 별명</param>
         /// <param name="phone">회원 전화번호</param>
         /// <returns></returns>
-        private bool SigninInsert(
+        internal bool SigninInsert(
             string id,
             string pw,
             string name,
@@ -466,6 +385,54 @@ namespace MyMate_Server.ServerModule
 
                 // Insert문 수행
                 okInsert = CallSigninSP(value, conn);
+
+                // DB 닫기
+                if (!ConnClose(conn))
+                {
+                    throw new NOTCLOSEEXCEPTION();
+                }
+            }
+            catch (NOTCLOSEEXCEPTION noDataException)
+            {
+                // conn close를 실패했을 때
+
+                return false;
+            }
+
+            return okInsert;
+        }
+
+        /// <summary>
+        /// 회원정보 수정을 저장하기 위해 DB에 Insert 문을 통하여 사용자 정보를 등록하는 메서드
+        /// </summary>
+        ///  <param name="id">회원 id</param>
+        /// <param name="pw">회원 password</param>
+        /// <param name="name">회원 이름</param>
+        /// <param name="nick">회원 별명</param>
+        /// <param name="phone">회원 전화번호</param>
+        /// <returns></returns>
+        internal bool ModifyInsert(
+            string id,
+            string pw,
+            string name,
+            string nick,
+            string phone
+)
+        {
+            // 결과값을 반환하는 변수
+            bool okInsert = true;
+
+            // Insert values 절
+            string value = $"{id}'','{pw}','{nick}','{name}','{phone}'";
+
+
+            try
+            {
+                // DB 연결
+                MySqlConnection conn = UserConnect();
+
+                // Insert문 수행
+                okInsert = CallSetUserinfoSP(value, conn);
 
                 // DB 닫기
                 if (!ConnClose(conn))
@@ -534,7 +501,7 @@ namespace MyMate_Server.ServerModule
 
                 DataTable dt = CallGetUserinfoSP(id, conn);
 
-                //Console.WriteLine(tb.Rows[0]["U_password"]);
+                Console.WriteLine(dt.Rows[0]["U_password"]);
 
                 // SQL Procedure 수행
                 if (dt == null)
@@ -571,7 +538,7 @@ namespace MyMate_Server.ServerModule
 
                 DataTable dt = CallGetProfileinfoSP(id, conn);
 
-                //Console.WriteLine(tb.Rows[0]["U_name"]);
+                //Console.WriteLine(dt.Rows[0]["U_name"]);
 
                 // SQL Procedure 수행
                 if (dt == null)
@@ -597,108 +564,92 @@ namespace MyMate_Server.ServerModule
             return true;
         }
 
-        public bool Modify(
-            string id,
-            string pw,
-            string name,
-            string nick,
-            string phone
+
+
+        // 미사용
+        /// <summary>
+        /// DB에 Select 구문을 수행하는 메서드
+        /// </summary>
+        /// <param name="table">Select하려는 테이블</param>
+        /// <param name="condition">Select할때 조건절(select문에서 where키워드 이후 전부 작성)</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        private DataTable SqlSelect(
+            string table,
+            string condition,
+            MySqlConnection conn
         )
         {
-            // 예외 경우일 경우 do-while 문을 탈출하여 return 하므로 디폴트를 false로 설정
-            bool okSignIn = false;
-
-            do
-            {
-                // 매개변수 값들의 null 체크
-                if (id == null)
-                {
-                    break;
-                }
-                if (pw == null)
-                {
-                    break;
-                }
-                if (name == null)
-                {
-                    break;
-                }
-                if (nick == null)
-                {
-                    break;
-                }
-                if (phone == null)
-                {
-                    break;
-                }
-
-                // 매개변수 값들의 공백을 체크
-                if (id == "")
-                {
-                    break;
-                }
-                if (pw == "")
-                {
-                    break;
-                }
-                if (name == "")
-                {
-                    break;
-                }
-                if (nick == "")
-                {
-                    break;
-                }
-                if (phone == "")
-                {
-                    break;
-                }
-
-                // 매개변수 값들의 이상이 없다면 수행 되는 과정
-                okSignIn = ModifyInsert(id, pw, name, nick, phone);
-
-            } while (false);
-
-            return okSignIn;
-        }
-
-        private bool ModifyInsert(
-            string id,
-            string pw,
-            string name,
-            string nick,
-            string phone
-        )
-        {
-            // 결과값을 반환하는 변수
-            bool okInsert = true;
-
-            // Insert values 절
-            string value = $"'{pw}','{nick}','{name}','{phone}'";
-
+            // Select문을 반환하기 위한 데이터 테이블
+            var datatable = new DataTable();
 
             try
             {
-                // DB 연결
-                MySqlConnection conn = UserConnect();
+                // Select 문을 수행 쿼리
+                string query = $"SELECT * FROM {table} WHERE {condition}";
 
-                // Insert문 수행
-                okInsert = CallSetUserinfoSP(id,value, conn);
+                // command : 쿼리를 수행하는 객체
+                // datareader : 쿼리 수행 결과를 가져오는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
 
-                // DB 닫기
-                if (!ConnClose(conn))
+                if (msc.ExecuteNonQuery() == 0)
                 {
-                    throw new NOTCLOSEEXCEPTION();
+                    throw new NODATAEXCEPTION();
+                }
+                else
+                {
+                    // ExecuteReader() 메서드는 DataReader를 만들어줌
+                    MySqlDataReader msdr = msc.ExecuteReader();
+
+                    // Load() 메서드는 DataReader를 통해 DataTable을 채움
+                    datatable.Load(msdr);
                 }
             }
-            catch (NOTCLOSEEXCEPTION noDataException)
+            catch (NODATAEXCEPTION noDataException)
             {
-                // conn close를 실패했을 때
+                // Select문이 수행되지 않았을 경우
+
+                return null;
+            }
+
+            return datatable;
+        }
+
+        /// <summary>
+        /// DB에 Insert 구문을 수행하는 메서드
+        /// </summary>
+        /// <param name="table">Insert하려는 테이블</param>
+        /// <param name="value">Insert할때 조건절(insert문에서 values 키워드 이후 전부 작성)</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        private bool SqlInsert(
+            string table,
+            string value,
+            MySqlConnection conn
+         )
+        {
+            try
+            {
+                // Insert 문을 수행 쿼리 
+                string query = $"INSERT INTO {table} VALUES ({value})";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Insert문이 수행되지 않았을 경우
 
                 return false;
             }
 
-            return okInsert;
+            return true;
         }
     }
 }
