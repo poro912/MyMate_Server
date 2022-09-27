@@ -22,13 +22,9 @@ namespace MyMate_Server.ServerModule
     class NOIDEXCEPTION : Exception
     {
     }
-
-    public delegate bool CheckInDelegaate(
-            string id,
-            string pw,
-            string name,
-            string nick,
-            string phone);
+    public delegate bool NoResultInOneParamDelegate(string value, MySqlConnection conn);
+    public delegate bool NoResultInTwoParamDelegate(string value1, string value2, MySqlConnection conn);
+    public delegate DataTable ResultInOneParamDelegate(string value, MySqlConnection conn);
 
     public class SQL
     {
@@ -114,7 +110,7 @@ namespace MyMate_Server.ServerModule
         /// <param name="value">사용자의 입력정보, SQL insert문 values절에 들어갈 값들</param>
         /// <param name="conn">DB connection 객체</param>
         /// <returns></returns>
-        private bool CallSigninSP(
+        internal bool Signin(
             string value,
             MySqlConnection conn
          )
@@ -122,10 +118,10 @@ namespace MyMate_Server.ServerModule
             try
             {
                 // SQL 회원가입 Procedure를 수행 쿼리 
-                string ProcedureString = $"call Pro_user_in({value});";
+                string query = $"call Pro_user_in({value});";
 
                 // command : 쿼리를 수행하는 객체
-                MySqlCommand msc = new MySqlCommand(ProcedureString, conn);
+                MySqlCommand msc = new MySqlCommand(query, conn);
 
                 // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
                 if (msc.ExecuteNonQuery() == 0)
@@ -150,7 +146,7 @@ namespace MyMate_Server.ServerModule
         /// <param name="pw">사용자가 입력하는 pw값</param>
         /// <param name="conn">DB connection 객체</param>
         /// <returns></returns>
-        private bool CallLoginSF(
+        internal bool Login(
             string id,
             string pw,
             MySqlConnection conn
@@ -159,10 +155,10 @@ namespace MyMate_Server.ServerModule
             try
             {
                 // SQL 로그인 Fuction 수행 쿼리
-                string FunctionString = $"SELECT F_Login('{id}','{pw}')";
+                string query = $"SELECT F_Login('{id}','{pw}')";
 
                 // command : 쿼리를 수행하는 객체
-                MySqlCommand msc = new MySqlCommand(FunctionString, conn);
+                MySqlCommand msc = new MySqlCommand(query, conn);
 
                 if (msc.ExecuteNonQuery() == 0)
                 {
@@ -185,7 +181,7 @@ namespace MyMate_Server.ServerModule
         /// <param name="id">사용자 아이디</param>
         /// <param name="conn">DB connection 객체</param>
         /// <returns></returns>
-        private DataTable CallGetUserinfoSP(
+        internal DataTable GetUserinfo(
             string id,
             MySqlConnection conn
         )
@@ -225,7 +221,7 @@ namespace MyMate_Server.ServerModule
         /// <param name="id">사용자 아이디</param>
         /// <param name="conn">DB connectnion 객체</param>
         /// <returns></returns>
-        private DataTable CallGetProfileinfoSP(
+        internal DataTable GetProfileinfo(
             string id,
             MySqlConnection conn
         )
@@ -266,7 +262,7 @@ namespace MyMate_Server.ServerModule
         /// <param name="value">회원정보</param>
         /// <param name="conn">DB connection 객체</param>
         /// <returns></returns>
-        private bool CallSetUserinfoSP(
+        internal bool SetUserinfo(
             string value,
             MySqlConnection conn
         )
@@ -274,10 +270,10 @@ namespace MyMate_Server.ServerModule
             try
             {
                 // SQL 회원정보 수정 Procedure를 수행 쿼리 
-                string ProcedureString = $"call p_set_up({value});";
+                string query = $"call p_set_up({value});";
 
                 // command : 쿼리를 수행하는 객체
-                MySqlCommand msc = new MySqlCommand(ProcedureString, conn);
+                MySqlCommand msc = new MySqlCommand(query, conn);
 
                 // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
                 if (msc.ExecuteNonQuery() == 0)
@@ -313,10 +309,12 @@ namespace MyMate_Server.ServerModule
             string name,
             string nick,
             string phone,
-            CheckInDelegaate checkInMethod)
+            NoResultInOneParamDelegate inMethod
+        )
         {
             // 예외 경우일 경우 do-while 문을 탈출하여 return 하므로 디폴트를 false로 설정
             bool okSignIn = false;
+            string userInfo = "";
 
             do
             {
@@ -365,12 +363,127 @@ namespace MyMate_Server.ServerModule
                 }
 
                 // 매개변수 값들의 이상이 없다면 수행 되는 과정
-                okSignIn = checkInMethod(id, pw, name, nick, phone);
+                userInfo = $"'{id}','{pw}','{nick}','{name}','{phone}',null";
+                okSignIn = noResultConnectDB(userInfo, inMethod);
 
             } while (false);
 
             return okSignIn;
         }
+
+        // 오버로딩
+        // signin, modify
+        internal bool noResultConnectDB(
+            string value,
+            NoResultInOneParamDelegate noResultInOneParamDelegate
+        )
+        {
+            // 결과값을 반환하는 변수
+            bool okInsert = true;
+
+            try
+            {
+                // DB 연결
+                MySqlConnection conn = UserConnect();
+
+                // Insert문 수행
+                okInsert = noResultInOneParamDelegate(value, conn);
+
+                // DB 닫기
+                if (!ConnClose(conn))
+                {
+                    throw new NOTCLOSEEXCEPTION();
+                }
+            }
+            catch (NOTCLOSEEXCEPTION noDataException)
+            {
+                // conn close를 실패했을 때
+
+                return false;
+            }
+
+            return okInsert;
+        }
+
+        //오버로딩
+        //login
+        internal bool noResultConnectDB(
+            string value1,
+            string value2,
+            NoResultInTwoParamDelegate noResultInTwoParamDelegate
+        )
+        {
+            try
+            {
+                // DB 연결
+                MySqlConnection conn = UserConnect();
+
+                // SQL Login Functio 수행
+                if (CallLoginSF(value1, value2, conn) != true)
+                {
+                    // SQL함수가 정상 작동 하지 못했을 때
+                    return false;
+                }
+
+                // DB 닫기
+                if (!ConnClose(conn))
+                {
+                    throw new NOTCLOSEEXCEPTION();
+                }
+
+            }
+            catch (NOTCLOSEEXCEPTION notCloseException)
+            {
+                // conn close를 실패했을 때
+
+                return false;
+            }
+
+            return true;
+        }
+
+        // getUserInfo, getProfileInfo
+        internal DataTable resultConnectDB(
+            string value,
+            ResultInOneParamDelegate resultInOneParamDelegate 
+        )
+        {
+            var dt = new DataTable();
+
+            try
+            {
+                // DB 연결
+                MySqlConnection conn = UserConnect();
+
+                dt = resultInOneParamDelegate(value, conn);
+
+                Console.WriteLine(dt.Rows[0]["U_password"]);
+
+                // SQL Procedure 수행
+                if (dt == null)
+                {
+                    // SQL함수가 정상 작동 하지 못했을 때
+                    return null;
+                }
+
+                // DB 닫기
+                if (!ConnClose(conn))
+                {
+                    throw new NOTCLOSEEXCEPTION();
+                }
+
+            }
+            catch (NOTCLOSEEXCEPTION notCloseException)
+            {
+                // conn close를 실패했을 때
+
+                return null;
+            }
+
+            return dt;
+        }
+
+        /*
 
         /// <summary>
         /// 회원가입을 위해서 DB에 Insert 문을 통해서 사용자 정보 등록하는 메서드
@@ -382,27 +495,19 @@ namespace MyMate_Server.ServerModule
         /// <param name="phone">회원 전화번호</param>
         /// <returns></returns>
         internal bool SigninInsert(
-            string id,
-            string pw,
-            string name,
-            string nick,
-            string phone
+            string userInfo
         )
         {
             // 결과값을 반환하는 변수
             bool okInsert = true;
-
-            // Insert values 절
-            string value = $"'{id}','{pw}','{nick}','{name}','{phone}',null";
-
-
+                                   
             try
             {
                 // DB 연결
                 MySqlConnection conn = UserConnect();
 
                 // Insert문 수행
-                okInsert = CallSigninSP(value, conn);
+                okInsert = CallSigninSP(userInfo, conn);
 
                 // DB 닫기
                 if (!ConnClose(conn))
@@ -430,27 +535,19 @@ namespace MyMate_Server.ServerModule
         /// <param name="phone">회원 전화번호</param>
         /// <returns></returns>
         internal bool ModifyInsert(
-            string id,
-            string pw,
-            string name,
-            string nick,
-            string phone
+            string userInfo
         )
         {
             // 결과값을 반환하는 변수
-            bool okInsert = true;
-
-            // Insert values 절
-            string value = $"{id}'','{pw}','{nick}','{name}','{phone}'";
-
-
+            bool okUpdate = true;
+                    
             try
             {
                 // DB 연결
                 MySqlConnection conn = UserConnect();
 
                 // Insert문 수행
-                okInsert = CallSetUserinfoSP(value, conn);
+                okUpdate = CallSetUserinfoSP(userInfo, conn);
 
                 // DB 닫기
                 if (!ConnClose(conn))
@@ -465,7 +562,7 @@ namespace MyMate_Server.ServerModule
                 return false;
             }
 
-            return okInsert;
+            return okUpdate;
         }
 
         /// <summary>
@@ -513,16 +610,18 @@ namespace MyMate_Server.ServerModule
         /// </summary>
         /// <param name="id">사용자 아이디</param>
         /// <returns></returns>
-        public bool GetUserInfo(
+        public DataTable GetUserInfo(
             string id
         )
         {
+            var dt = new DataTable();
+
             try
             {
                 // DB 연결
                 MySqlConnection conn = UserConnect();
 
-                DataTable dt = CallGetUserinfoSP(id, conn);
+                dt = CallGetUserinfoSP(id, conn);
 
                 Console.WriteLine(dt.Rows[0]["U_password"]);
 
@@ -530,7 +629,7 @@ namespace MyMate_Server.ServerModule
                 if (dt == null)
                 {
                     // SQL함수가 정상 작동 하지 못했을 때
-                    return false;
+                    return null;
                 }
 
                 // DB 닫기
@@ -544,10 +643,10 @@ namespace MyMate_Server.ServerModule
             {
                 // conn close를 실패했을 때
 
-                return false;
+                return null;
             }
 
-            return true;
+            return dt;
         }
 
         /// <summary>
@@ -555,16 +654,18 @@ namespace MyMate_Server.ServerModule
         /// </summary>
         /// <param name="id">사용자 아이디</param>
         /// <returns></returns>
-        public bool GetProfileInfo(
+        public DataTable GetProfileInfo(
             string id
         )
         {
+            var dt = new DataTable();
+
             try
             {
                 // DB 연결
                 MySqlConnection conn = UserConnect();
 
-                DataTable dt = CallGetProfileinfoSP(id, conn);
+                dt = CallGetProfileinfoSP(id, conn);
 
                 //Console.WriteLine(dt.Rows[0]["U_name"]);
 
@@ -572,7 +673,7 @@ namespace MyMate_Server.ServerModule
                 if (dt == null)
                 {
                     // SQL함수가 정상 작동 하지 못했을 때
-                    return false;
+                    return null;
                 }
 
                 // DB 닫기
@@ -586,15 +687,15 @@ namespace MyMate_Server.ServerModule
             {
                 // conn close를 실패했을 때
 
-                return false;
+                return null;
             }
 
-            return true;
+            return dt;
         }
+        */
 
 
-
-        // 미사용
+        /*
         /// <summary>
         /// DB에 Select 구문을 수행하는 메서드
         /// </summary>
@@ -678,6 +779,7 @@ namespace MyMate_Server.ServerModule
             }
 
             return true;
-        }
+        }*/
     }
+        
 }
