@@ -419,7 +419,7 @@ namespace MyMate_Server.ServerModule
                 MySqlConnection conn = UserConnect();
 
                 // SQL Login Functio 수행
-                if (CallLoginSF(value1, value2, conn) != true)
+                if (noResultInTwoParamDelegate(value1, value2, conn) != true)
                 {
                     // SQL함수가 정상 작동 하지 못했을 때
                     return false;

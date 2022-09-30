@@ -10,7 +10,7 @@ SQL sql = new();
 
 //Console.WriteLine(sql.noResultConnectDB("sky","1234",sql.CallLoginSF));
 
-Console.WriteLine(sql.resultConnectDB("sky",sql.CallGetUserinfoSP));
+Console.WriteLine(sql.resultConnectDB("sky",sql.GetUserinfo));
 
 do
 {
