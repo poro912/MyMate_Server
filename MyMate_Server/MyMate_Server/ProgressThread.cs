@@ -1,14 +1,14 @@
-﻿using Protocal.Protocols;
-using Protocol;
-using Protocol.Protocols;
-using ServerNetwork;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MyMate_Server.ServerModule;
 using System.Data;
+
+using Protocol;
+using Protocol.Protocols;
+using ServerNetwork;
+using MyMate_Server.ServerModule;
 
 namespace MyMate_Server
 {
@@ -83,7 +83,7 @@ namespace MyMate_Server
             if (a_data != null)
             {
                 // 입력된 데이터를 Key Value 로 변환
-                result = Converter.Convert(ref a_data);
+                result = Converter.Convert(a_data);
 
                 Console.WriteLine("전송받은 데이터 타입 : " + result.Key);
                 Console.WriteLine("전송받은 데이터 : " + result.Value);

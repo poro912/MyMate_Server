@@ -1,5 +1,4 @@
-﻿using Protocal.Protocols;
-using Protocol.Protocols;
+﻿using Protocol.Protocols;
 using Protocol;
 using ServerNetwork.Module;
 using System;
@@ -11,16 +10,20 @@ using System.Threading.Tasks;
 
 namespace ServerSystem
 {
-	public class LoginClient : Client
+	public class LoginClient
 	{
 		private Thread thread;
-		public LoginClient(TcpClient tcpClient) : base(tcpClient)
+		public Client client;
+
+		public LoginClient(Client client)
 		{
+			this.client = client;
+
 			this.thread = new Thread(Run);
 
 			// 이벤트 등록
 			// 수신된 것이 있다면 이벤트가 호출됨
-			this.receive.ReceiveEvent += wakeup;
+			this.client.receive.ReceiveEvent += wakeup;
 
 			// 최초 1회 실행함
 			this.thread.Start();
@@ -34,7 +37,7 @@ namespace ServerSystem
 			KeyValuePair<byte, object?> result;
 
 			// 수신큐가 빌때까지
-			while (!receive.IsEmpty())
+			while (!this.client.receive.isEmpty())
 			{
 
 			}
@@ -43,19 +46,23 @@ namespace ServerSystem
 		public void wakeup(object sender, EventArgs e)
 		{
 			// 스레드가 실행중이 아니라면
-			if (!this.thread.IsAlive)
-				this.thread.Start();
+			//if (!this.thread.IsAlive)
+				//this.thread.Start();
 		}
 
 		public void Delete()
 		{
 			// 수신 중지
-			receive.Stop();
-			receive.ReceiveEvent -= this.wakeup;
+			this.client.receive.Stop();
+			this.client.receive.ReceiveEvent -= this.wakeup;
 
 			// 스레드를 종료시킴
-			thread.Interrupt();
-			thread.Join();
+			if(thread.IsAlive)
+			{
+				thread.Interrupt();
+				thread.Join();
+			}
+			
 		}
 
 	}

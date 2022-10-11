@@ -53,6 +53,7 @@ namespace ServerSystem
 			else
 			{
 				login_dict.TryAdd(usercode, client);
+				client.client.start();
 			}
 		}
 
@@ -60,7 +61,9 @@ namespace ServerSystem
 		public Client? getUser(int usercode)
 		{
 			login_dict.TryGetValue(usercode, out LoginClient? value);
-			return value;
+			if (value == null)
+				return null;
+			return value.client;
 		}
 
 		public void getUser(int usercode, out LoginClient? client)
