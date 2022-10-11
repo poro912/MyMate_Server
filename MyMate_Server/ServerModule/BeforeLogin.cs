@@ -11,6 +11,7 @@ using System.Net.Sockets;
 
 namespace ServerSystem
 {
+	/*
 	// 로그인 이전의 Accept 객체에 대한 확인
 	// 로그인 이전의 클라이언트는 지속적으로 연결 중인지 확인해야한다.
 	// 큐로 구현하며, 연결되어 있지 않다면 객체를 삭제
@@ -99,7 +100,7 @@ namespace ServerSystem
 			}
 
 		}
-
+	
 		public void wakeup(object sender, EventArgs e)
 		{
 			if (thread == null)
@@ -108,13 +109,13 @@ namespace ServerSystem
 				this.thread.Start();
 				return;
 			}
-			/*
-			if (!this.thread.IsAlive)
-			{
-				this.thread = new Thread(Run);
-				this.thread.Start();
-			}
-			*/
+			
+			//if (!this.thread.IsAlive)
+			//{
+			//	this.thread = new Thread(Run);
+			//	this.thread.Start();
+			//}
+			
 		}
 
 		public void Delete()
@@ -134,4 +135,5 @@ namespace ServerSystem
 		}
 
 	}
+	*/
 }

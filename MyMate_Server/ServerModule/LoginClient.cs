@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace ServerSystem
 {
+	/*
 	public class LoginClient
 	{
 		private Thread thread;
@@ -66,4 +67,5 @@ namespace ServerSystem
 		}
 
 	}
+	*/
 }

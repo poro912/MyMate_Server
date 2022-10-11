@@ -25,25 +25,24 @@ namespace ServerSystem
 
 		private Semaphore semaphore = new(1, 1);
 
-		private List<byte> bytes;
+		private List<byte>? bytes;
 		private RcdResult result;
 		public TClient(TcpClient tcpClient) : base(tcpClient)
 		{
 			// base에서 기본 네트워크 설정 및 Send, Receive를 할당해준다.
-			this.receive.ReceiveEvent += new (this.wakeup); //new DataReceived(this.wakeup);
+			this.receive.ReceiveEvent += new DataReceived(this.wakeup);
 
 			// 임시 변수 초기화
 
-			// 로그인 이전 이벤트 등록
-			BeforeLoginEvent.ConnectCheckEvent += new DelIsConnect(this.ConnectCheck);
-
 			// 수신을 시작한다.
 			this.start();
+
+			// 로그인 이전 이벤트 등록
+			BeforeLoginEvent.ConnectCheckEvent += new DelIsConnect(this.ConnectCheck);
 		}
 
 		// 이벤트로 호출 될 클래스
-		// public void wakeup()
-		public void wakeup(object sender, EventArgs e)
+		public void wakeup()
 		{
 			Console.WriteLine("이벤트로 일어났음");
 
@@ -127,36 +126,49 @@ namespace ServerSystem
 			if(login.id.Equals("admin"))
 			{
 				Console.WriteLine("로그인 성공");
-				// 로그인 컨테이너에 자기 자신 등록
-				//LoginContainer.Instance.registUser(this);
 
 				this.isLogin = true;
 				this.usercode = 1;
+
+				// 로그인 컨테이너에 자기 자신 등록
+				LoginContainer.Instance.registUser((int)this.usercode, this);
+
+				UserInfoProtocol.User user = new(1234, "admin", "poro", "poro","010-8355-3460");
+				bytes = new();
+				Generater.Generate(user, ref bytes);
+				SendCheck(bytes);
+
+				// 로그인이 된 경우 더이상 연결 되었는지 확인할 필요가 없음
+				BeforeLoginEvent.ConnectCheckEvent -= this.ConnectCheck;
 			}
 		}
 
-		// 해당 매소드를 사용할 때는 try catch 문장을 꼭 써줘야 한다.
+		// 데이터를 전송하는 메소드
 		public void SendCheck(List<byte> bytes)
 		{
 			try
 			{
 				this.send.Data(bytes);
+				if(!send.Stream.Socket.Connected)
+					throw new Exception("통신 끊어짐");
 			}
 			catch (Exception e)
 			{
 				Console.WriteLine(e);
 				this.Delete();
-				throw;
 			}
 		}
 
 		public void ConnectCheck()
 		{
-			isConnectProtocol.IsConnect isConnect = new();
-			Generater.Generate(isConnect, ref bytes);
+			List<byte> temp = new();
+
+			isConnectProtocol.IsConnect isConnect = new(1);
+			Generater.Generate(isConnect, ref temp);
+
 			try
 			{
-				SendCheck(bytes);
+				SendCheck(temp);
 				// 가장 최근의 통신이 끊어진 상태라면
 				if (!this.send.Stream.Socket.Connected)
 					throw new Exception("통신 끊어짐");

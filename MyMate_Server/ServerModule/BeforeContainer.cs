@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace ServerSystem
 {
+	/*
 	public class BeforeContainer
 	{
 		// 싱글톤 구현
@@ -69,4 +70,5 @@ namespace ServerSystem
 			return temp;
 		}
 	}
+	*/
 }
