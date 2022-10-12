@@ -457,7 +457,7 @@ namespace ServerSystem
 
                 dt = resultInOneParamDelegate(value, conn);
 
-                Console.WriteLine(dt.Rows[0]["U_password"]);
+                //Console.WriteLine(dt.Rows[0]["U_password"]);
 
                 // SQL Procedure 수행
                 if (dt == null)

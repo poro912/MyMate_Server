@@ -1,6 +1,4 @@
-﻿using MyMate_Server;
-using MyMate_Server.ServerModule;
-using ServerNetwork;
+﻿using ServerNetwork;
 using ServerSystem;
 
 Server server = Server.Instance;
@@ -25,15 +23,3 @@ while (true)
     //	login.registUser(beforeClient.usercode, new(beforeClient.client));
     //}
 }
-
-
-
-// 클래스 만들어서 스레드
-
-// 통신, db
-
-do
-{
-
-}
-while (true);

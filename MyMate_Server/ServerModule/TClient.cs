@@ -145,7 +145,7 @@ namespace ServerSystem
 				DataTable tb = new DataTable();
 				// DB에서 user 객체를 생성할 때 필요한 정보 가져오기
 				tb = sql.resultConnectDB(login.id,sql.GetUserinfo);
-				Console.WriteLine("id : " + tb.Rows[0][1].ToString());
+				Console.WriteLine("id : " + tb.Rows[0][0].ToString());
                 Console.WriteLine("id : " + tb.Rows[0][2].ToString());
                 Console.WriteLine("id : " + tb.Rows[0][3].ToString());
                 Console.WriteLine("id : " + tb.Rows[0][4].ToString());
