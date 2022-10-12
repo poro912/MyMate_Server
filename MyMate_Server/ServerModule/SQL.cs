@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace MyMate_Server.ServerModule
+namespace ServerSystem
 {
     class NODATAEXCEPTION : Exception
     {

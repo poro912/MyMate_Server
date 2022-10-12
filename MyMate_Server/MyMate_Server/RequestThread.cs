@@ -12,7 +12,7 @@ using MyMate_Server.ServerModule;
 
 namespace MyMate_Server
 {
-    public class ProgressThread
+    public class RequestThread
     {
         // 스레드를 만들기 위한 변수들
         private Thread progress_thread;
@@ -26,7 +26,7 @@ namespace MyMate_Server
         private List<byte> l_data = new();
 
         // 생성자
-        private ProgressThread(Temp temp)
+        private RequestThread(Temp temp)
         {
             this.temp = temp;
             progress_thread = new Thread(() => ProgressRun());
