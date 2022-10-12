@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Protocol;
+using Protocol.Protocols;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace ServerSystem
 {
+	/*
 	public class BeforeContainer
 	{
 		// 싱글톤 구현
@@ -22,12 +25,16 @@ namespace ServerSystem
 				return instance;
 			}
 		}
-
+		private static isConnectProtocol.IsConnect isConnect = new(1);
+		private static List<byte> bytes;
 		private ConcurrentQueue<BeforeLogin> clients;
 
 		private BeforeContainer()
 		{
 			clients = new ConcurrentQueue<BeforeLogin>();
+
+			bytes = new List<byte>();
+			Generater.Generate(isConnect, ref bytes);
 		}
 
 		public void Push(BeforeLogin client)
@@ -48,18 +55,20 @@ namespace ServerSystem
 			// 다시 큐에 넣음
 			try
 			{
-				temp.send.Data("test");
+				temp.client.send.Data(bytes);
 				clients.Enqueue(temp);
 			}
-			catch
+			catch (Exception e)
 			{
 				// 오류가 발생하였다면 연결이 끊어진 것
+				temp.Delete();
 				temp = null;
+				Console.WriteLine(e);
 			}
-
 			// 반환시 데이터가 있다면 로그인 된 것
 			// null 이라면 로그인되지 않은 것
 			return temp;
 		}
 	}
+	*/
 }

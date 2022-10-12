@@ -17,10 +17,12 @@ namespace ServerSystem
 		static public void AccpetRun(Client client)
 		{
 			Console.WriteLine("포트 번호 : " + client.socket.RemoteEndPoint);
-			BeforeLogin beforeclient = new(client.tcpClient);
+			//BeforeLogin beforeclient = new(client);
 
 			// 큐에 삽입
-			BeforeContainer.Instance.Push(beforeclient);
+			//BeforeContainer.Instance.Push(beforeclient);
+			Console.WriteLine("TClinet 생성");
+			new TClient(client.tcpClient);
 		}
 	}
 }
