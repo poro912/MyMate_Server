@@ -112,6 +112,7 @@ namespace ServerSystem
 					continue;
 
                 // 요청에 따른 처리 조건문들 작성해야하는 위치
+
             }
         }
 
@@ -145,12 +146,12 @@ namespace ServerSystem
 				DataTable tb = new DataTable();
 				// DB에서 user 객체를 생성할 때 필요한 정보 가져오기
 				tb = sql.resultConnectDB(login.id,sql.GetUserinfo);
-				Console.WriteLine("id : " + tb.Rows[0][0].ToString());
-                Console.WriteLine("id : " + tb.Rows[0][2].ToString());
-                Console.WriteLine("id : " + tb.Rows[0][3].ToString());
-                Console.WriteLine("id : " + tb.Rows[0][4].ToString());
+				Console.WriteLine("id : " + tb.Rows[0]["U_id"].ToString());
+                Console.WriteLine("name : " + tb.Rows[0]["U_name"].ToString());
+                Console.WriteLine("nick : " + tb.Rows[0]["U_Nickname"].ToString());
+                Console.WriteLine("phone : " + tb.Rows[0]["U_phone"].ToString());
 
-                UserInfoProtocol.User user = new(1234, tb.Rows[0][1].ToString(), tb.Rows[0][2].ToString(), tb.Rows[0][3].ToString(), tb.Rows[0][4].ToString());
+                UserInfoProtocol.User user = new(1234, tb.Rows[0]["U_id"].ToString(), tb.Rows[0]["U_name"].ToString(), tb.Rows[0]["U_Nickname"].ToString(), tb.Rows[0]["U_phone"].ToString());
 				bytes = new();
 				Generater.Generate(user, ref bytes);
 				SendCheck(bytes);
