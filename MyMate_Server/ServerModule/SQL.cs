@@ -5,27 +5,66 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace ServerSystem
 {
-    class NODATAEXCEPTION : Exception
+    /// <summary>
+    /// SQL Query 결과 값이 없는 경우 발생되는 오류 클래스
+    /// </summary>
+    public class NODATAEXCEPTION : Exception
     {
+        public NODATAEXCEPTION() : base() 
+        {
+        }
+
+        public NODATAEXCEPTION(string message) : base(message)
+        { 
+        }
+
+        public NODATAEXCEPTION(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        public NODATAEXCEPTION(SerializationInfo info, StreamingContext context)
+        { 
+        }
+
     }
 
-    class NOTCLOSEEXCEPTION : Exception
+    /// <summary>
+    /// SQL connection 객체가 종료되지 못한 경우 발생되는 오류 클래스
+    /// </summary>
+    public class NOTCLOSEEXCEPTION : Exception
     {
-    }
+        public NOTCLOSEEXCEPTION() : base()
+        {
+        }
 
-    class NOIDEXCEPTION : Exception
-    {
+        public NOTCLOSEEXCEPTION(string message) : base(message)
+        {
+        }
+
+        public NOTCLOSEEXCEPTION(string message, Exception innerException) : base(message, innerException)
+        {
+        }
+
+        public NOTCLOSEEXCEPTION(SerializationInfo info, StreamingContext context)
+        {
+        }
+
     }
+        
+    // 인터페이스에서 사용되는 델리게이터 선언
     public delegate bool NoResultInOneParamDelegate(string value, MySqlConnection conn);
     public delegate bool NoResultInTwoParamDelegate(string value1, string value2, MySqlConnection conn);
+    public delegate bool NoResultInThreeParamDelegate(string value1, int value2, bool value3, MySqlConnection conn);
     public delegate DataTable ResultInOneParamDelegate(string value, MySqlConnection conn);
 
+    // DB에 접근하기 위한 클래스
     public class SQL
     {
         /// <summary>
@@ -68,7 +107,7 @@ namespace ServerSystem
         private MySqlConnection AdminConnect()
         {
             // DB admin 계정으로 connection 객체 만들기
-            MySqlConnection adminConn = Connect("admin", "db_server", "12345", "none");
+            MySqlConnection adminConn = Connect("root", "db_server", "yuhan1234", "none");
 
             return adminConn;
         }
@@ -132,7 +171,7 @@ namespace ServerSystem
             catch (NODATAEXCEPTION noDataException)
             {
                 // Procedure가 수행되지 않았을 경우
-
+                Console.WriteLine(noDataException.Message);
                 return false;
             }
 
@@ -168,7 +207,7 @@ namespace ServerSystem
             catch (NODATAEXCEPTION noDataException)
             {
                 // Function이 수행되지 않았을 경우
-
+                Console.WriteLine(noDataException.Message);
                 return false;
             }
 
@@ -208,7 +247,7 @@ namespace ServerSystem
             catch (NODATAEXCEPTION noDataException)
             {
                 // Select문이 수행되지 않았을 경우
-
+                Console.WriteLine(noDataException.Message);
                 return null;
             }
 
@@ -231,7 +270,7 @@ namespace ServerSystem
 
             try
             {
-                // Select 문을 수행 쿼리
+                // SQL 회원 프로필 정보를 가져오는 Procedure 수행 쿼리
                 string query = $"call p_pr_sel('{id}');";
 
                 //// command : 쿼리를 수행하는 객체
@@ -249,7 +288,7 @@ namespace ServerSystem
             catch (NODATAEXCEPTION noDataException)
             {
                 // Select문이 수행되지 않았을 경우
-
+                Console.WriteLine(noDataException.Message);
                 return null;
             }
 
@@ -284,7 +323,198 @@ namespace ServerSystem
             catch (NODATAEXCEPTION noDataException)
             {
                 // Procedure가 수행되지 않았을 경우
+                Console.WriteLine(noDataException.Message);
+                return false;
+            }
 
+            return true;
+        }
+
+        /// <summary>
+        /// DB에서 친구등록을 Id를 통해 실행하는 프로시저를 실행시키는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="friendId">친구 아이디</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        internal bool AddFriendById(
+            string id,
+            string friendId,
+            MySqlConnection conn
+        )
+        {
+            try
+            {
+                // SQL 친구 아이디를 통한 친구추가 Procedure를 수행 쿼리 
+                string query = $"call P_Fr_id_in({id},{friendId});";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Procedure가 수행되지 않았을 경우
+                Console.WriteLine(noDataException.Message);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// DB에서 친구등록을 phone를 통해 실행하는 프로시저를 실행시키는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="friendPhone">친구 핸드폰 번호</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        internal bool AddFriendByPhone(
+            string id,
+            string friendPhone,
+            MySqlConnection conn
+        )
+        {
+            try
+            {
+                // SQL 핸드폰번호를 통한 친구추가 Procedure를 수행 쿼리 
+                string query = $"call P_Fr_id_in({id},{friendPhone});";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Procedure가 수행되지 않았을 경우
+                Console.WriteLine(noDataException.Message);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// DB에서 친구 별명을 설정하는 프로시저를 실행시키는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="friendCode">친구 코드</param>
+        /// <param name="friendNickName">친구 별명</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        internal bool SetFriendNick(
+            string id,
+            int friendCode,
+            string friendNickName,
+            MySqlConnection conn
+        )
+        {
+            try
+            {
+                // SQL 친구 별명 수정 Procedure를 수행 쿼리 
+                string query = $"call P_Fr_set_nick({id},{friendCode},{friendNickName});";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Procedure가 수행되지 않았을 경우
+                Console.WriteLine(noDataException.Message);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// DB에서 친구숨김을 설정하는 프로시저를 실행시키는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="friendCode">친구 코드</param>
+        /// <param name="isCheck">숨김 여부를 표현하는 bool변수</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        internal bool SetFriendHide(
+            string id,
+            int friendCode,
+            bool isCheck,
+            MySqlConnection conn
+        )
+        {
+            try
+            {
+                // SQL 친구 숨김 Procedure를 수행 쿼리 
+                string query = $"call P_Fr_set_hide ({id},{friendCode},{isCheck});";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Procedure가 수행되지 않았을 경우
+                Console.WriteLine(noDataException.Message);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// DB에서 친구차단을 설정하는 프로시저를 실행시키는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="friendCode">친구 코드</param>
+        /// <param name="isCheck">차단 여부를 표현하는 bool변수</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        internal bool SetFriendBlock(
+            string id,
+            int friendCode,
+            bool isCheck,
+            MySqlConnection conn
+        )
+        {
+            try
+            {
+                // SQL 친구 차단 Procedure를 수행 쿼리 
+                string query = $"call P_Fr_set_block ({id},{friendCode},{isCheck});";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Procedure가 수행되지 않았을 경우
+                Console.WriteLine(noDataException.Message);
                 return false;
             }
 
@@ -303,7 +533,7 @@ namespace ServerSystem
         /// <param name="phone">클라이언트에서 보낸 전화번호</param>
         /// <param name="checkInMethod">회원정보의 유효성 확인 후 실행할 메서드</param>
         /// <returns></returns>
-        public bool Check(
+        public bool beforeConnectDBCheck(
             string id,
             string pw,
             string name,
@@ -372,22 +602,30 @@ namespace ServerSystem
         }
 
         // 오버로딩
-        // signin, modify
+        // Signin, Modify
+        /// <summary>
+        /// 결과 값이 없는 DB Query를 실행시키는 인터페이스
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="noResultInOneParamDelegate"></param>
+        /// <returns></returns>
         internal bool noResultConnectDB(
             string value,
             NoResultInOneParamDelegate noResultInOneParamDelegate
         )
         {
-            // 결과값을 반환하는 변수
-            bool okInsert = true;
 
             try
             {
                 // DB 연결
                 MySqlConnection conn = UserConnect();
 
-                // Insert문 수행
-                okInsert = noResultInOneParamDelegate(value, conn);
+                // SQL 모듈 수행
+                if (noResultInOneParamDelegate(value, conn) != true)
+                {
+                    // SQL모듈이 정상 작동 하지 못했을 때
+                    return false;
+                }
 
                 // DB 닫기
                 if (!ConnClose(conn))
@@ -395,18 +633,18 @@ namespace ServerSystem
                     throw new NOTCLOSEEXCEPTION();
                 }
             }
-            catch (NOTCLOSEEXCEPTION noDataException)
+            catch (NOTCLOSEEXCEPTION notCloseException)
             {
                 // conn close를 실패했을 때
-
+                Console.WriteLine(notCloseException.Message);
                 return false;
             }
 
-            return okInsert;
+            return true;
         }
 
         //오버로딩
-        //login
+        //Login, AddfriendByUd, AddfriendByPhone
         internal bool noResultConnectDB(
             string value1,
             string value2,
@@ -418,10 +656,10 @@ namespace ServerSystem
                 // DB 연결
                 MySqlConnection conn = UserConnect();
 
-                // SQL Login Functio 수행
+                // SQL 모듈 수행
                 if (noResultInTwoParamDelegate(value1, value2, conn) != true)
                 {
-                    // SQL함수가 정상 작동 하지 못했을 때
+                    // SQL모듈이 정상 작동 하지 못했을 때
                     return false;
                 }
 
@@ -435,7 +673,44 @@ namespace ServerSystem
             catch (NOTCLOSEEXCEPTION notCloseException)
             {
                 // conn close를 실패했을 때
+                Console.WriteLine(notCloseException.Message);
+                return false;
+            }
 
+            return true;
+        }
+
+        // 오버로딩
+        // SetFriendNick, SetFriendHide, SetFriendBlock
+        internal bool noResultConnectDB(
+            string id,
+            int friendCode,
+            bool isCheck,
+            NoResultInThreeParamDelegate noResultInThreeParamDelegate
+        )
+        {
+
+            try
+            {
+                // DB 연결
+                MySqlConnection conn = UserConnect();
+
+                // Insert문 수행
+                if (noResultInThreeParamDelegate(id, friendCode, isCheck, conn) != true)
+                {
+                    return false;
+                }
+
+                // DB 닫기
+                if (!ConnClose(conn))
+                {
+                    throw new NOTCLOSEEXCEPTION();
+                }
+            }
+            catch (NOTCLOSEEXCEPTION notCloseException)
+            {
+                // conn close를 실패했을 때
+                Console.WriteLine(notCloseException.Message);
                 return false;
             }
 
@@ -476,310 +751,11 @@ namespace ServerSystem
             catch (NOTCLOSEEXCEPTION notCloseException)
             {
                 // conn close를 실패했을 때
-
+                Console.WriteLine(notCloseException.Message);
                 return null;
             }
 
             return dt;
         }
-
-        /*
-
-        /// <summary>
-        /// 회원가입을 위해서 DB에 Insert 문을 통해서 사용자 정보 등록하는 메서드
-        /// </summary>
-        ///  <param name="id">회원 id</param>
-        /// <param name="pw">회원 password</param>
-        /// <param name="name">회원 이름</param>
-        /// <param name="nick">회원 별명</param>
-        /// <param name="phone">회원 전화번호</param>
-        /// <returns></returns>
-        internal bool SigninInsert(
-            string userInfo
-        )
-        {
-            // 결과값을 반환하는 변수
-            bool okInsert = true;
-                                   
-            try
-            {
-                // DB 연결
-                MySqlConnection conn = UserConnect();
-
-                // Insert문 수행
-                okInsert = CallSigninSP(userInfo, conn);
-
-                // DB 닫기
-                if (!ConnClose(conn))
-                {
-                    throw new NOTCLOSEEXCEPTION();
-                }
-            }
-            catch (NOTCLOSEEXCEPTION noDataException)
-            {
-                // conn close를 실패했을 때
-
-                return false;
-            }
-
-            return okInsert;
-        }
-
-        /// <summary>
-        /// 회원정보 수정을 저장하기 위해 DB에 Insert 문을 통하여 사용자 정보를 등록하는 메서드
-        /// </summary>
-        ///  <param name="id">회원 id</param>
-        /// <param name="pw">회원 password</param>
-        /// <param name="name">회원 이름</param>
-        /// <param name="nick">회원 별명</param>
-        /// <param name="phone">회원 전화번호</param>
-        /// <returns></returns>
-        internal bool ModifyInsert(
-            string userInfo
-        )
-        {
-            // 결과값을 반환하는 변수
-            bool okUpdate = true;
-                    
-            try
-            {
-                // DB 연결
-                MySqlConnection conn = UserConnect();
-
-                // Insert문 수행
-                okUpdate = CallSetUserinfoSP(userInfo, conn);
-
-                // DB 닫기
-                if (!ConnClose(conn))
-                {
-                    throw new NOTCLOSEEXCEPTION();
-                }
-            }
-            catch (NOTCLOSEEXCEPTION noDataException)
-            {
-                // conn close를 실패했을 때
-
-                return false;
-            }
-
-            return okUpdate;
-        }
-
-        /// <summary>
-        /// 입력된 id, pw로 로그인 시켜주는 메서드
-        /// </summary>
-        /// <param name="id">회원이 입력한 id</param>
-        /// <param name="pw">회원이 입력한 pw</param>
-        /// <returns></returns>
-        public bool Login(
-            string id, 
-            string pw
-        )
-        {
-            try
-            {
-                // DB 연결
-                MySqlConnection conn = UserConnect();
-
-                // SQL Login Functio 수행
-                if (CallLoginSF(id, pw, conn) != true)
-                {
-                    // SQL함수가 정상 작동 하지 못했을 때
-                    return false;
-                }
-
-                // DB 닫기
-                if (!ConnClose(conn))
-                {
-                    throw new NOTCLOSEEXCEPTION();
-                }
-
-            }
-            catch (NOTCLOSEEXCEPTION notCloseException)
-            {
-                // conn close를 실패했을 때
-
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// id값 입력을 통해서 사용자의 회원정보를 가져오는 메서드
-        /// </summary>
-        /// <param name="id">사용자 아이디</param>
-        /// <returns></returns>
-        public DataTable GetUserInfo(
-            string id
-        )
-        {
-            var dt = new DataTable();
-
-            try
-            {
-                // DB 연결
-                MySqlConnection conn = UserConnect();
-
-                dt = CallGetUserinfoSP(id, conn);
-
-                Console.WriteLine(dt.Rows[0]["U_password"]);
-
-                // SQL Procedure 수행
-                if (dt == null)
-                {
-                    // SQL함수가 정상 작동 하지 못했을 때
-                    return null;
-                }
-
-                // DB 닫기
-                if (!ConnClose(conn))
-                {
-                    throw new NOTCLOSEEXCEPTION();
-                }
-
-            }
-            catch (NOTCLOSEEXCEPTION notCloseException)
-            {
-                // conn close를 실패했을 때
-
-                return null;
-            }
-
-            return dt;
-        }
-
-        /// <summary>
-        /// id값을 입력을 통해서 사용자의 프로필정보를 가져오는 메서드
-        /// </summary>
-        /// <param name="id">사용자 아이디</param>
-        /// <returns></returns>
-        public DataTable GetProfileInfo(
-            string id
-        )
-        {
-            var dt = new DataTable();
-
-            try
-            {
-                // DB 연결
-                MySqlConnection conn = UserConnect();
-
-                dt = CallGetProfileinfoSP(id, conn);
-
-                //Console.WriteLine(dt.Rows[0]["U_name"]);
-
-                // SQL Procedure 수행
-                if (dt == null)
-                {
-                    // SQL함수가 정상 작동 하지 못했을 때
-                    return null;
-                }
-
-                // DB 닫기
-                if (!ConnClose(conn))
-                {
-                    throw new NOTCLOSEEXCEPTION();
-                }
-
-            }
-            catch (NOTCLOSEEXCEPTION notCloseException)
-            {
-                // conn close를 실패했을 때
-
-                return null;
-            }
-
-            return dt;
-        }
-        */
-
-
-        /*
-        /// <summary>
-        /// DB에 Select 구문을 수행하는 메서드
-        /// </summary>
-        /// <param name="table">Select하려는 테이블</param>
-        /// <param name="condition">Select할때 조건절(select문에서 where키워드 이후 전부 작성)</param>
-        /// <param name="conn">DB connection 객체</param>
-        /// <returns></returns>
-        private DataTable SqlSelect(
-            string table,
-            string condition,
-            MySqlConnection conn
-        )
-        {
-            // Select문을 반환하기 위한 데이터 테이블
-            var datatable = new DataTable();
-
-            try
-            {
-                // Select 문을 수행 쿼리
-                string query = $"SELECT * FROM {table} WHERE {condition}";
-
-                // command : 쿼리를 수행하는 객체
-                // datareader : 쿼리 수행 결과를 가져오는 객체
-                MySqlCommand msc = new MySqlCommand(query, conn);
-
-                if (msc.ExecuteNonQuery() == 0)
-                {
-                    throw new NODATAEXCEPTION();
-                }
-                else
-                {
-                    // ExecuteReader() 메서드는 DataReader를 만들어줌
-                    MySqlDataReader msdr = msc.ExecuteReader();
-
-                    // Load() 메서드는 DataReader를 통해 DataTable을 채움
-                    datatable.Load(msdr);
-                }
-            }
-            catch (NODATAEXCEPTION noDataException)
-            {
-                // Select문이 수행되지 않았을 경우
-
-                return null;
-            }
-
-            return datatable;
-        }
-
-        /// <summary>
-        /// DB에 Insert 구문을 수행하는 메서드
-        /// </summary>
-        /// <param name="table">Insert하려는 테이블</param>
-        /// <param name="value">Insert할때 조건절(insert문에서 values 키워드 이후 전부 작성)</param>
-        /// <param name="conn">DB connection 객체</param>
-        /// <returns></returns>
-        private bool SqlInsert(
-            string table,
-            string value,
-            MySqlConnection conn
-         )
-        {
-            try
-            {
-                // Insert 문을 수행 쿼리 
-                string query = $"INSERT INTO {table} VALUES ({value})";
-
-                // command : 쿼리를 수행하는 객체
-                MySqlCommand msc = new MySqlCommand(query, conn);
-
-                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
-                if (msc.ExecuteNonQuery() == 0)
-                {
-                    throw new NODATAEXCEPTION();
-                }
-            }
-            catch (NODATAEXCEPTION noDataException)
-            {
-                // Insert문이 수행되지 않았을 경우
-
-                return false;
-            }
-
-            return true;
-        }*/
-    }
-        
+    }    
 }
