@@ -3,6 +3,7 @@
 using ServerNetwork;
 using ServerNetwork.Module;
 using ServerSystem;
+using System.Data;
 
 Server server = Server.Instance;
 server.clientAccept = AcceptProcess.AccpetRun;
