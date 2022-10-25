@@ -111,8 +111,53 @@ namespace ServerSystem
 				if (null == result.Value)
 					continue;
 
-                // 요청에 따른 처리 조건문들 작성해야하는 위치
+                // SQL객체 생성
+                SQL sql = new SQL();
 
+                // 요청에 따른 처리 조건문들 작성해야하는 위치
+                //result.key 값을 확인하여 각 프로토콜로 변환(if문 사용)
+                //각 요청에 따른 처리 메서드는 따로 분리하여 뎁스 줄여서 작성
+
+                if (result.Key == DataType.USER_INFO)
+				{
+					Console.WriteLine("회원정보 요청");
+
+					// result를 UserInfoProtocol의 User 객체로 변환
+                    Protocol.Protocols.UserInfoProtocol.User? user;
+                    user = result.Value as Protocol.Protocols.UserInfoProtocol.User;
+
+                    // 조회한 사용자 정보를 받을  datatable 객체 생성
+                    DataTable tb = new DataTable();
+
+                    // DB에서 user 객체를 생성할 때 필요한 정보 가져오기
+                    tb = sql.resultConnectDB(usercode.ToString(), sql.GetUserinfo);
+                    Console.WriteLine("id : " + tb.Rows[0]["U_id"].ToString());
+                    Console.WriteLine("name : " + tb.Rows[0]["U_name"].ToString());
+                    Console.WriteLine("nick : " + tb.Rows[0]["U_Nickname"].ToString());
+                    Console.WriteLine("phone : " + tb.Rows[0]["U_phone"].ToString());
+
+					// User 객체 생성
+                    UserInfoProtocol.User userInfo = new(1234, tb.Rows[0]["U_id"].ToString(), tb.Rows[0]["U_name"].ToString(), tb.Rows[0]["U_Nickname"].ToString(), tb.Rows[0]["U_phone"].ToString());
+                    bytes = new();
+                    Generater.Generate(userInfo, ref bytes);
+                    SendCheck(bytes);
+                }
+				if (result.Key == DataType.MESSAGE)
+				{
+                    Console.WriteLine("메시지 요청");
+
+                    // result를 MessageProtocol의 Message 객체로 변환
+                    Protocol.Protocols.MessageProtocol.Message? message;
+                    message = result.Value as Protocol.Protocols.MessageProtocol.Message;
+
+					// 메시지 수신 일경우
+					// 서버에서 메시지를 가져온 후 확인
+					
+					// *대화 내용을 서버에만 저장 할 것인지 아니면 클라이언트 로컬에도 저장 할 것인지?
+
+					// 메시지 송신 일경우
+					// 서버에 메시지를 저장 후 상대방에게 전송
+                }
             }
         }
 
@@ -146,11 +191,14 @@ namespace ServerSystem
 				DataTable tb = new DataTable();
 				// DB에서 user 객체를 생성할 때 필요한 정보 가져오기
 				tb = sql.resultConnectDB(login.id,sql.GetUserinfo);
+				// DB에서 가져온 값 확인
 				Console.WriteLine("id : " + tb.Rows[0]["U_id"].ToString());
                 Console.WriteLine("name : " + tb.Rows[0]["U_name"].ToString());
                 Console.WriteLine("nick : " + tb.Rows[0]["U_Nickname"].ToString());
                 Console.WriteLine("phone : " + tb.Rows[0]["U_phone"].ToString());
 
+				//usercode에 가져온 U_code 저장하는 부분 만들기
+				// user 객체 생성
                 UserInfoProtocol.User user = new(1234, tb.Rows[0]["U_id"].ToString(), tb.Rows[0]["U_name"].ToString(), tb.Rows[0]["U_Nickname"].ToString(), tb.Rows[0]["U_phone"].ToString());
 				bytes = new();
 				Generater.Generate(user, ref bytes);
