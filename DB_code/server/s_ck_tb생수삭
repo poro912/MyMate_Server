@@ -1,0 +1,112 @@
+server ck 생수삭
+
+
+
+create procedure p_s_ck_create(
+p_u_code int,
+p_s_code int,
+p_ck_name varchar(32),
+p_CK_content varchar(500),
+p_ck_date date,
+p_CK_start_time time,
+p_CK_end_time time
+)
+DETERMINISTIC
+begin
+declare p_u_name varchar(32);
+select u_name into p_u_name from user_Tb where U_code = p_u_code;
+
+insert into s_ck_tb(s_code, s_ck_code, creater , ck_name, CK_content, ck_date, ck_check, CK_start_time, CK_end_time)
+	values(p_s_code,(select get_seq('s_ck')),p_u_name,p_ck_name, p_CK_content,p_ck_date,0,p_CK_start_time, p_CK_end_time);
+end $$
+
+
+create procedure p_s_ck_select(
+p_s_code int,
+p_s_ck_code int
+)
+DETERMINISTIC
+begin
+select creater, ck_name, CK_content, ck_date, ck_check, CK_start_time, CK_end_time
+from s_ck_tb where s_code = p_s_code && s_ck_code = p_s_ck_code;
+
+end $$
+
+create procedure p_s_ck_checked(
+p_s_code int,
+p_s_ck_code int
+)
+DETERMINISTIC
+begin
+update s_ck_tb set ck_check = 1 where s_code = p_s_code && s_ck_code = p_s_ck_code;
+end $$
+
+create procedure p_s_ck_unchecked(
+p_s_code int,
+p_s_ck_code int
+)
+DETERMINISTIC
+begin
+update s_ck_tb set ck_check = 0 where s_code = p_s_code && s_ck_code = p_s_ck_code;
+end $$
+
+
+create procedure p_s_ck_update_ck_name(
+p_s_code int,
+p_s_ck_code int,
+p_ck_name varchar(32)
+)
+DETERMINISTIC
+begin
+update s_ck_tb set ck_name = p_ck_name where s_code = p_s_code && s_ck_code = p_s_ck_code;
+end $$
+
+create procedure p_s_ck_update_ck_content(
+p_s_code int,
+p_s_ck_code int,
+p_CK_content varchar(500)
+)
+DETERMINISTIC
+begin
+update s_ck_tb set CK_content = p_CK_content where s_code = p_s_code && s_ck_code = p_s_ck_code;
+end $$
+
+create procedure p_s_ck_update_ck_date(
+p_s_code int,
+p_s_ck_code int,
+p_CK_date date
+)
+DETERMINISTIC
+begin
+update s_ck_tb set CK_date = p_CK_date where s_code = p_s_code && s_ck_code = p_s_ck_code;
+end $$
+
+create procedure p_s_ck_update_ck_starttime(
+p_s_code int,
+p_s_ck_code int,
+p_CK_start_time time
+)
+DETERMINISTIC
+begin
+update s_ck_tb set CK_start_time = p_CK_start_time where s_code = p_s_code && s_ck_code = p_s_ck_code;
+end $$
+
+create procedure p_s_ck_update_ck_endtime(
+p_s_code int,
+p_s_ck_code int,
+p_CK_end_time time
+)
+DETERMINISTIC
+begin
+update s_ck_tb set CK_end_time = p_CK_end_time where s_code = p_s_code && s_ck_code = p_s_ck_code;
+end $$
+
+
+create procedure p_s_ck_delete(
+p_s_code int,
+p_s_ck_code int
+)
+DETERMINISTIC
+begin
+delete from s_ck_tb where s_code = p_s_code && s_ck_code = p_s_ck_code;
+end $$
