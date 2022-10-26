@@ -331,6 +331,117 @@ namespace ServerSystem
         }
 
         /// <summary>
+        /// DB에 회원 별명을 저장하는 프로시저를 실행시키는 메서드
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="nickname">사용자 별명</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        internal bool SetUserNick(
+            string id,
+            string nickname,
+            MySqlConnection conn
+        )
+        {
+            try
+            {
+                // SQL 회원정보 수정 Procedure를 수행 쿼리 
+                string query = $"call p_set_up_Nick({id},{nickname});";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Procedure가 수행되지 않았을 경우
+                Console.WriteLine(noDataException.Message);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="name">사용자 이름</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        internal bool SetUserName(
+            string id,
+            string name,
+            MySqlConnection conn
+        )
+        {
+            try
+            {
+                // SQL 회원정보 수정 Procedure를 수행 쿼리 
+                string query = $"call p_set_up_name({id},{name});";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Procedure가 수행되지 않았을 경우
+                Console.WriteLine(noDataException.Message);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="id">사용자 아이디</param>
+        /// <param name="phone">사용자 핸드폰 번호</param>
+        /// <param name="conn">DB connection 객체</param>
+        /// <returns></returns>
+        internal bool SetUserPhone(
+            string id,
+            string phone,
+            MySqlConnection conn
+        )
+        {
+            try
+            {
+                // SQL 회원정보 수정 Procedure를 수행 쿼리 
+                string query = $"call p_set_up_phone ({id},{phone});";
+
+                // command : 쿼리를 수행하는 객체
+                MySqlCommand msc = new MySqlCommand(query, conn);
+
+                // ExecuteNonQuery() 메서드는 쿼리의 영향을 받은 행의 수를 반환 하는 메서드
+                if (msc.ExecuteNonQuery() == 0)
+                {
+                    throw new NODATAEXCEPTION();
+                }
+            }
+            catch (NODATAEXCEPTION noDataException)
+            {
+                // Procedure가 수행되지 않았을 경우
+                Console.WriteLine(noDataException.Message);
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// DB에서 친구등록을 Id를 통해 실행하는 프로시저를 실행시키는 메서드
         /// </summary>
         /// <param name="id">사용자 아이디</param>
