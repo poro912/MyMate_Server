@@ -717,8 +717,8 @@ namespace ServerSystem
         /// <summary>
         /// 결과 값이 없는 DB Query를 실행시키는 인터페이스
         /// </summary>
-        /// <param name="value"></param>
-        /// <param name="noResultInOneParamDelegate"></param>
+        /// <param name="value">전달 값</param>
+        /// <param name="noResultInOneParamDelegate">매개변수가 한 개인 델리게이터</param>
         /// <returns></returns>
         internal bool noResultConnectDB(
             string value,
@@ -756,6 +756,13 @@ namespace ServerSystem
 
         //오버로딩
         //Login, AddfriendByUd, AddfriendByPhone
+        /// <summary>
+        /// 결과 값이 없는 DB Query를 실행시키는 인터페이스
+        /// </summary>
+        /// <param name="value1">전달 값1</param>
+        /// <param name="value2">전달 값2</param>
+        /// <param name="noResultInTwoParamDelegate">매개변수가 두 개인 델리게이터</param>
+        /// <returns></returns>
         internal bool noResultConnectDB(
             string value1,
             string value2,
@@ -793,6 +800,14 @@ namespace ServerSystem
 
         // 오버로딩
         // SetFriendNick, SetFriendHide, SetFriendBlock
+        /// <summary>
+        /// 결과 값이 없는 DB Query를 실행시키는 인터페이스
+        /// </summary>
+        /// <param name="id">사용자 id</param>
+        /// <param name="friendCode">친구 코드</param>
+        /// <param name="isCheck">체크 bool 변수</param>
+        /// <param name="noResultInThreeParamDelegate">매개변수가 세 개인 델리게이터</param>
+        /// <returns></returns>
         internal bool noResultConnectDB(
             string id,
             int friendCode,
@@ -829,6 +844,12 @@ namespace ServerSystem
         }
 
         // getUserInfo, getProfileInfo
+        /// <summary>
+        /// 결과 값이 있는 DB Query를 실행시키는 인터페이스
+        /// </summary>
+        /// <param name="value">전달 값</param>
+        /// <param name="resultInOneParamDelegate">매개변수가 한 개인 델리게이터</param>
+        /// <returns></returns>
         internal DataTable resultConnectDB(
             string value,
             ResultInOneParamDelegate resultInOneParamDelegate 
