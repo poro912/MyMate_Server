@@ -1,7 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using ServerNetwork;
-using ServerNetwork.Module;
+using ServerToClient;
+using ServerToClinet;
 using ServerSystem;
 using System.Data;
 

@@ -1,6 +1,4 @@
-﻿using Protocol.Protocols;
-using Protocol;
-using ServerNetwork.Module;
+﻿using Protocol;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,9 +6,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ServerSystem
+namespace ServerSystem.trash
 {
-	/*
+    /*
 	public class LoginClient
 	{
 		private Thread thread;

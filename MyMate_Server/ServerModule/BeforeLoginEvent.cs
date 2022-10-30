@@ -9,7 +9,7 @@ namespace ServerSystem
 	public delegate void DelIsConnect();
 	public class BeforeLoginEvent
 	{
-		static private event DelIsConnect Connect_check_event;
+		static private event DelIsConnect ?Connect_check_event;
 		static public event DelIsConnect ConnectCheckEvent
 		{
 			add

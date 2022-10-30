@@ -1,17 +1,15 @@
-﻿using ServerNetwork.Module;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 using Protocol;
-using Protocol.Protocols;
 using System.Net.Sockets;
 
-namespace ServerSystem
+namespace ServerSystem.trash
 {
-	/*
+    /*
 	// 로그인 이전의 Accept 객체에 대한 확인
 	// 로그인 이전의 클라이언트는 지속적으로 연결 중인지 확인해야한다.
 	// 큐로 구현하며, 연결되어 있지 않다면 객체를 삭제

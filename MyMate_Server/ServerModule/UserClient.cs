@@ -1,8 +1,10 @@
 ﻿using System.Data;
-using ServerNetwork.Module;
 using System.Net.Sockets;
 using Protocol;
-using Protocol.Protocols;
+
+using ServerToClient;
+using ServerToClinet;
+
 using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
 
 namespace ServerSystem
@@ -19,9 +21,9 @@ namespace ServerSystem
         public UserClient(TcpClient tcpClient) :
             base(tcpClient)
         {
-            receive.ReceiveEvent += WakeUp;
+            ReceiveEvent += WakeUp;
 
-            start();
+            Start();
 
             BeforeLoginEvent.ConnectCheckEvent += CheckConnection;
         }
@@ -43,7 +45,7 @@ namespace ServerSystem
 
             Console.WriteLine(userCode + ": Semaphore is assigned.");
 
-            if (!receive.isEmpty())
+            if (!IsEmpty())
             {
                 if (isLogin)
                 {
@@ -51,7 +53,7 @@ namespace ServerSystem
                 }
                 else
                 {
-                    BeforeLogin();
+					BeforeLogin();
                 }
             }
 
@@ -62,9 +64,9 @@ namespace ServerSystem
 
         private void BeforeLogin()
         {
-            while (receive.isEmpty())
+            while (!IsEmpty())
             {
-                receive.Pop(out bytes);
+                Receive(out bytes);
                 result = Converter.Convert(bytes);
 
                 if (result.Value == null)
@@ -83,9 +85,9 @@ namespace ServerSystem
 
         private void AfterLogin()
         {
-            while (receive.isEmpty())
+            while (!IsEmpty())
             {
-                receive.Pop(out bytes);
+                Receive(out bytes);
                 result = Converter.Convert(bytes);
 
                 if (result.Value == null)
@@ -106,14 +108,32 @@ namespace ServerSystem
         {
             var login = result.Value as LoginProtocol.Login;
 
-            if (login == null)
+			if (login == null)
             {
                 return;
             }
             
             Console.WriteLine(userCode + ": Logging in...");
-            Console.WriteLine(userCode + ": ID " + login.id + " has been attempted.");
+            Console.WriteLine(userCode + ": ID \"" + login.id + "\" has been attempted.");
 
+			// 로그인 성공 시 작동할 부분
+			isLogin = true;
+
+			var container = LoginContainer.Instance;
+
+            userCode = 10;
+
+			container.registUser((int)userCode, this);
+
+			UserInfoProtocol.User user = new((int)userCode, "admin", "poro", "poro", "010-8355-3460");
+			
+			SendData(Generater.Generate(user));
+
+			BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
+
+			Console.WriteLine(userCode + ": Login succeeded.");
+
+			/* SQL 코드로 로그인을 시도하는 부분
             SQL sql = new();
 
             if (sql.noResultConnectDB(login.id, login.pw, sql.Login))
@@ -152,10 +172,12 @@ namespace ServerSystem
                     Console.WriteLine(userCode + ": Login succeeded.");
                 }
             }
-        }
+            */
+		}
 
         private void Logout(ReceiveResult result)
         {
+            Console.WriteLine("로그아웃 시도");
             var logout = result.Value as LogoutProtocol.Logout;
 
             if (logout == null)
@@ -164,9 +186,13 @@ namespace ServerSystem
             }
 
             var loginContainer = LoginContainer.Instance;
-
+            Console.WriteLine("user code : " + userCode);
+            Console.WriteLine("Logout usercode : " + logout.usercode);
+            Console.WriteLine("userCode == Logout.usercode" + (userCode == logout.usercode) );
+			//if (userCode == logout.usercode)
             if (loginContainer.isLogin(logout.usercode))
             {
+                Console.WriteLine("로그아웃 시작");
                 isLogin = false;
                 userCode = null;
                 
@@ -184,7 +210,7 @@ namespace ServerSystem
         {
             try
             {
-                send.Data(bytes);
+                Send(bytes);
                 if (!tcpClient.Connected)
                 {
                     Console.WriteLine(userCode + ": User Client is Disconnected.");
@@ -229,9 +255,9 @@ namespace ServerSystem
             userCode = null;
 
             BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
-            receive.ReceiveEvent -= WakeUp;
+            ReceiveEvent -= WakeUp;
 
-            receive.Stop();
+            StopReceive();
         }
     }
 }

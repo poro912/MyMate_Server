@@ -1,17 +1,18 @@
-﻿using ServerNetwork;
-using ServerNetwork.Module;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+using ServerToClient;
+using ServerToClinet;
 
 namespace ServerSystem
 {
 	public class LoginContainer
 	{
 		// 싱글톤 구현
-		static private LoginContainer instance;
+		static private LoginContainer? instance;
 		static public LoginContainer Instance
 		{
 			get 
@@ -53,7 +54,7 @@ namespace ServerSystem
 			else
 			{
 				login_dict.TryAdd(usercode, client);
-				client.start();
+				client.Start();
 			}
 		}
 
