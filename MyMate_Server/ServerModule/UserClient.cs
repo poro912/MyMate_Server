@@ -123,7 +123,7 @@ namespace ServerSystem
 
             userCode = 10;
 
-			container.registUser((int)userCode, this);
+			container.RegistUser((int)userCode, this);
 
 			UserInfoProtocol.User user = new((int)userCode, "admin", "poro", "poro", "010-8355-3460");
 			
@@ -186,11 +186,8 @@ namespace ServerSystem
             }
 
             var loginContainer = LoginContainer.Instance;
-            Console.WriteLine("user code : " + userCode);
-            Console.WriteLine("Logout usercode : " + logout.usercode);
-            Console.WriteLine("userCode == Logout.usercode" + (userCode == logout.usercode) );
-			//if (userCode == logout.usercode)
-            if (loginContainer.isLogin(logout.usercode))
+
+            if (loginContainer.IsLogin(logout.usercode))
             {
                 Console.WriteLine("로그아웃 시작");
                 isLogin = false;

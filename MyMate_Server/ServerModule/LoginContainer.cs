@@ -35,7 +35,7 @@ namespace ServerSystem
 		// 해당 유저가 로그인 상태인지 확인
 		// login	: true
 		// logout	: false
-		public bool isLogin(int usercode)
+		public bool IsLogin(int usercode)
 		{
 			login_dict.TryGetValue(usercode, out UserClient? temp);
 
@@ -43,10 +43,10 @@ namespace ServerSystem
 		}
 
 		// 유저의 클라이언트 저장을 시도한다.
-		public void registUser(int usercode, UserClient client)
+		public void RegistUser(int usercode, UserClient client)
 		{
 			// 로그인 상태라면 (로그인 정보가 있다면)
-			if(isLogin(usercode))
+			if(IsLogin(usercode))
 			{
 				login_dict[usercode] = client;
 			}
@@ -59,7 +59,7 @@ namespace ServerSystem
 		}
 
 		// 유저 데이터 획득을 시도한다.
-		public Client? getUser(int usercode)
+		public Client? GetUser(int usercode)
 		{
 			login_dict.TryGetValue(usercode, out UserClient? value);
 			if (value == null)
@@ -67,7 +67,7 @@ namespace ServerSystem
 			return value;
 		}
 
-		public void getUser(int usercode, out UserClient? client)
+		public void GetUser(int usercode, out UserClient? client)
 		{
 			login_dict.TryGetValue(usercode, out client);
 		}
