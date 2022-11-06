@@ -22,7 +22,7 @@ namespace ServerSystem
 
 			// 큐에 삽입
 			//BeforeContainer.Instance.Push(beforeclient);
-			Console.WriteLine("TClinet 생성");
+			Console.WriteLine("Clinet 생성");
 			new UserClient(client.tcpClient);
 		}
 	}
