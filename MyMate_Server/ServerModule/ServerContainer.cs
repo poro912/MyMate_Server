@@ -1,10 +1,7 @@
-﻿using Protocol;
-using System;
+﻿#pragma warning disable CS1998
+
+using Protocol;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
 
@@ -35,35 +32,72 @@ namespace ServerSystem
 			LoadServer();
 		}
 
-		// 새로운 서버 하나를 등록
-		void Regist(UserServer server)
+		public void ServerCreate(int userCode, string title)
 		{
-			Console.WriteLine(": Create new Server");
+			Console.WriteLine(userCode + ": Create new Server");
 
-			// !SQL Server CreateCode
 
-			// !SQL 만들어진 서버 시퀀스를 서버에 저장
+			// !SQL 서버 생성 후 서버코드 반환
+			// !Protocol 서버 생성 결과 전송
+
 			// server.serverCode = ;
 			// Console.WriteLine(": Fail to Create new Server");
 
+			UserServer server = new(userCode, 1, "temp");
+
 			serverDict.Add(server.serverCode, server);
-			Console.WriteLine(": Complite to Create new Server");
+			Console.WriteLine(server.serverCode + ": Complite to Create new Server");
 
 			// 유저의 데이터를 넣는다.
-			// server.InvateUser();
-			// server.CreateUser();
+			server.EnterUser(userCode);
 
+
+			// !Protocol Toast userCode에게 생성 완료 메시지 전송 
+
+			// !Protocol Toast userCode에게 생성 실패 메시지 전송
+
+			// Send()
+		}
+
+		public void ServerDelete(int serverCode, int userCode)
+		{
+			// 서버코드의 크리에이터와 같은지 확인한 후 삭제한다.
+
+			// !SQL 서버 삭제 
+
+			// !Protocol Toast userCode에게 삭제 메시지 전송
+		}
+
+		public UserServer? GetServer(int serverCode)
+		{
+			serverDict.TryGetValue(serverCode, out UserServer? server);
+			return server;
 		}
 
 		// DB에서 서버를 로드함 (Server 최초 실행시)
 		private void LoadServer()
 		{
-			Console.WriteLine(": Server List Load to DB");
+			Console.WriteLine(": All Server Load to DB");
+			
 			// !SQL 서버목록들을 불러온다.
 			/*
-			foreach(Server temp in Servercodes )
+			foreach(var server in servers )
 			{
-				serverDict.Add(serverCode, temp);
+				UserServer temp_server = new(server.Code,server.Title);
+				// !SQL 채널 목록을 불러온다.
+				foreach(int channel in channels)
+				{
+					server.CreateChannel();
+				}
+				// !SQL 유저 목록을 불러온다.
+				foreach(int user in users)
+				{
+					server.AddUser(user);
+				}
+				
+				// 컨테이너에 서버 추가
+				serverDict.Add(server.serverCode, temp_server);
+
 			}
 			*/
 		}
@@ -71,39 +105,31 @@ namespace ServerSystem
 
 	public class UserServer
 	{
+		public string title;
 		public int serverCode;
-		public List<int> inviteUserList;
+		public int owner;
+		public List<int> enterUserList;
 		public List<int> channelList;
 
 		// send queue와 세마포 선언
-		private ConcurrentQueue<List<byte>> sendQueue;
+		//private ConcurrentQueue<List<byte>> sendQueue;
 
 
-		public UserServer(int serverCode)
+		public UserServer(int owner, int serverCode, string title)
 		{
 			this.serverCode = serverCode;
-			inviteUserList = new List<int>();
+			this.title = title;
+			enterUserList = new List<int>();
 			channelList = new List<int>();
-			sendQueue = new ConcurrentQueue<List<byte>>();
+			this.owner = owner;
+			//sendQueue = new ConcurrentQueue<List<byte>>();
 		}
 
-		public void InvateUser()
+		// 데이터를 받아와서 처리함
+		async public void Process(ReceiveResult target)
 		{
-			// !SQL 서버에 접근한 유저 추가
-		}
-
-		public void CreateChannel()
-		{
-			// !SQL 서버에 채널 추가
-		}
-
-		// 서버의 모든 사람에게 데이터를 전송한다.
-		// 외부에서 서버에게 요청하는 메소드
-		// 스레드와 비슷하게 작동해야 함
-		// 데이터를 DB에 적용하고 각 유저에게 보낼 수 있도록 가공 저장한다.
-		async public void Send(ReceiveResult target)
-		{
-			List<byte>? temp = null;
+			// if(target.serverCode == 0 && target.serverCode != this.serverCode)
+			// 서버코드가 0이거나 serverCode가 같지 않다면 잘못온 것이므로 처리하지 않는다.
 
 			// !SQL 서버에 변경사항 발생
 			// 메시지 송신, 체크리스트 변경, 캘린더 변경
@@ -121,24 +147,112 @@ namespace ServerSystem
 			// 생성		저장 및 전송
 			// 삭제		isDeleted 속성 변경
 
+			// Send(target);
+		}
+
+		public void ModifyServer(int userCode ,ServerProtocol.Server info)
+		{
+			// 소유주가 변경을 요청했다면
+			if(userCode == owner)
+			{
+				// !SQL 서버 변경사항 DB 추가
+
+				this.title = info.title;
+				this.owner = info.adminCode;
+			}
+		}
+
+		public void EnterUser(int userCode)
+		{
+			// !SQL 서버에 접근한 유저 추가
+			// 이미 들어온 적 있다면 코드만 변경
+			enterUserList.Add(userCode);
+		}
+
+		public void LeaveUser(int userCode)
+		{
+			// !SQL 서버에 퇴장한 유저 추가
+
+			enterUserList.Remove(userCode);
+		}
+
+		public void CreateChannel(string title,int channelType)
+		{
+			int channelCode = 10;
+			// Protocol.ChannelType.
+			// !SQL 서버에 채널 추가
+
+			// 채널 생성 성공 시 채널코드 반환해야함
+			channelList.Add(channelCode);
+
+			Send(Generater.Generate(new ChannelProtocol.CHNNEL(this.serverCode, channelCode, title, channelType)));
+		}
+
+		public void DeleteChannel(int channelCode)
+		{
+			// !SQL 서버 채널 삭제 (isDelete 속성 fasle로 만들기)
+
+			// !Protocol 채널 삭제 메시지 전송
+			// Send()
+		}
+
+		// 채널 내용 변경
+		public void ModifyChannel(int userCode, ChannelProtocol.CHNNEL info)
+		{
+			if(userCode == owner)
+			{
+				// !SQL 채널 변경사항 DB 추가
+			}
+			// 채널의 생성자가 해당 유저라면
+			// if()
+			//{
+				// !SQL 채널 변경사항 DB 추가
+			//}
+		}
+
+
+		// 서버의 모든 사람에게 데이터를 전송한다.
+		// 외부에서 서버에게 요청하는 메소드
+		// 스레드와 비슷하게 작동해야 함
+		// 데이터를 DB에 적용하고 각 유저에게 보낼 수 있도록 가공 저장한다.
+		/*
+		private void Send(ReceiveResult target)
+		{
+			List<byte>? temp = null;
+
+			
+
+			// 만약 데이터 SQL에 저장이 완료되면 해당 데이터를 큐에 삽입
 			if (temp != null)
 				sendQueue.Enqueue(temp);
 		}
-
-		// 각 유저들에게 데이터를 전송
-		async private void Sending()
+		private void Send(List<byte> target)
 		{
-			while(!sendQueue.IsEmpty)
+			// 만약 데이터 SQL에 저장이 완료되면 해당 데이터를 큐에 삽입
+			if (target != null)
+				sendQueue.Enqueue(target);
+		}
+		*/
+		// 각 유저들에게 데이터를 전송
+		async private void Send(int userCode, List<byte> target)
+		{
+			bool check = true;
+			foreach(int user in enterUserList)
 			{
-				sendQueue.TryDequeue(out List<byte>? target);
-				if (target == null)
-					continue;
-
-				for(int i = 0 ; i < inviteUserList.Count; i++)
+				if (user == userCode)
 				{
-					// userContainer를 참조하여 전부 보내줌
-					LoginContainer.Instance.Send(inviteUserList[i], target);
+					check = false;
+					break;
 				}
+			}
+			if (check)
+				return;
+
+			Console.WriteLine(userCode + " : MessageSending");
+			foreach(var user in enterUserList)
+			{
+				// userContainer를 참조하여 전부 보내줌
+				LoginContainer.Instance.Send(user, target);
 			}
 		}
 	}

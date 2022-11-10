@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 using ServerToClient;
-using ServerToClinet;
 
 namespace ServerSystem
 {
@@ -72,6 +71,7 @@ namespace ServerSystem
 		//  등록된 유저를 삭제
 		public void EraseUser(int userCode, UserClient target)
 		{
+			// 현재 메소드 이름 출력
 			Console.WriteLine(System.Reflection.MethodBase.GetCurrentMethod().Name);
 			loginDict.TryGetValue(userCode, out UserClient? temp);
 
