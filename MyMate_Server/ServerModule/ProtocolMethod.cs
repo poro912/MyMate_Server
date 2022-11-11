@@ -78,12 +78,15 @@ namespace ServerSystem
 
 		}
 	}
-
+	// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡMethodsㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 	public static class ProtocolMethods
 	{
 		// 서버로 데이터를 넘겨준다.
+		
 		public static void PassToServer(int userCode, ReceiveResult result)
 		{
+			// 프로토콜 미확인시 확인 불가능
+			/*
 			MessageProtocol.MESSAGE? target = result.Value as MessageProtocol.MESSAGE;
 			if (null == target)
 				return;
@@ -92,8 +95,10 @@ namespace ServerSystem
 			if (null == server)
 				return;
 			// 비동기 실행
-			server.Process(result);
+			server.Process(userCode, result);
+			*/
 		}
+
 
 		public static void ServerMethod(int userCode, ReceiveResult result)
 		{
@@ -130,14 +135,17 @@ namespace ServerSystem
 		{
 			// 메시지를 result에 등록된 서버에 전달한다.
 			MessageProtocol.MESSAGE? target = result.Value as MessageProtocol.MESSAGE;
+
+			// 서버가 없다면 종료
 			if (null == target)
 				return;
-			//target.serverCode;
+
+			// 서버를 불러온다.
 			UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
 			if (null == server)
 				return;
 			// 비동기 실행
-			server.Process(result);
+			server.Process(userCode, result);
 		}
 
 		
