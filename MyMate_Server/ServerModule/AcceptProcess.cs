@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 using Protocol;
-using ServerNetwork.Module;
+using ServerToClient;
 using ServerSystem;
 
 namespace ServerSystem
@@ -21,8 +21,8 @@ namespace ServerSystem
 
 			// 큐에 삽입
 			//BeforeContainer.Instance.Push(beforeclient);
-			Console.WriteLine("TClinet 생성");
-			new TClient(client.tcpClient);
+			Console.WriteLine("Clinet 생성");
+			new UserClient(client.tcpClient);
 		}
 	}
 }

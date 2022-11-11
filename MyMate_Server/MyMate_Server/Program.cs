@@ -1,4 +1,5 @@
-﻿using ServerNetwork;
+﻿/*
+using ServerNetwork;
 using ServerSystem;
 
 Server server = Server.Instance;
@@ -23,3 +24,4 @@ while (true)
     //	login.registUser(beforeClient.usercode, new(beforeClient.client));
     //}
 }
+*/
