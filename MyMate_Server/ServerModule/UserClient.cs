@@ -350,7 +350,13 @@ namespace ServerSystem
 				BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
 
 				// 유저의 데이터를 전송 가능한 형태로 집어 넣는다.
-				LoginUserProtocol.LOGINUSER user = new LoginUserProtocol.LOGINUSER(10, "admin", "poro", "angus99@naver.com", "010-8355-3460");
+				LoginUserProtocol.LOGINUSER user = new LoginUserProtocol.LOGINUSER();
+				user.userCode = 10;
+				user.name = "admin";
+				user.nickname = "poro";
+				user.email = "angus99@naver.com";
+				user.phone = "010-8355-3460";
+					//LoginUserProtocol.LOGINUSER(10, "admin", "poro", "angus99@naver.com", "010-8355-3460");
 
 				// 로그인 정보 삽입
 				userCode = 10;
@@ -464,6 +470,7 @@ namespace ServerSystem
 			if (null == siginUp)
 				return false;
 			ToastProtocol.TOAST toast = new(0, "회원가입 시도");
+			Send(Generater.Generate(toast));
 
 			// !SQL 회원가입 
 			if (true) // (SQL.SIGNUP())
@@ -475,8 +482,6 @@ namespace ServerSystem
 				return true;
 			}
 
-			toast.content = "회원가입 성공";
-			Send(Generater.Generate(toast));
 			return false;
 		}
 	}

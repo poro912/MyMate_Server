@@ -176,7 +176,7 @@ namespace ServerSystem
 			enterUserList.Remove(userCode);
 		}
 
-		public void CreateChannel(string title,int channelType)
+		public void CreateChannel(int userCode, string title,int channelType)
 		{
 			int channelCode = 10;
 			// Protocol.ChannelType.
@@ -185,7 +185,7 @@ namespace ServerSystem
 			// 채널 생성 성공 시 채널코드 반환해야함
 			channelList.Add(channelCode);
 
-			Send(Generater.Generate(new ChannelProtocol.CHNNEL(this.serverCode, channelCode, title, channelType)));
+			Send(userCode, Generater.Generate(new ChannelProtocol.CHNNEL(this.serverCode, channelCode, title, channelType)));
 		}
 
 		public void DeleteChannel(int channelCode)
