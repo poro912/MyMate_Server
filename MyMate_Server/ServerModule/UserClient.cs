@@ -3,6 +3,7 @@
 
 using System.Data;
 using System.Net.Sockets;
+using Org.BouncyCastle.Asn1.Utilities;
 using Protocol;
 
 using ServerToClient;
@@ -59,6 +60,21 @@ namespace ServerSystem
 				Disconnection();
 				return;
 			}
+			// 소켓이 연결 상태가 아니라면
+			if (this.Stream != null)
+			{
+				if (this.Stream.Socket.Connected == false)
+				{
+					Disconnection();
+					return;
+				}
+			}
+			// 현재 Receive가 실행중이 아니라면
+			if(!this.receiveRun)
+			{
+				Disconnection();
+			}
+
 
 			// 세마포어 획득을 시도
 			if (!semaphore.WaitOne(10))
@@ -205,13 +221,13 @@ namespace ServerSystem
 			// 데이터를 전송 한 후 상대방이 받으면 연결 유지
 			try
 			{
-				Send(dummy);
 				// 연결이 끊겼다면
 				if (!tcpClient.Connected)
 				{
 					Console.WriteLine(userCode + ": User Client is Disconnected.");
 					throw new Exception();
 				}
+				base.Send(dummy);
 			}
 			catch (Exception e)
 			{

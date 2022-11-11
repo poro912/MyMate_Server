@@ -125,9 +125,34 @@ namespace ServerSystem
 			//sendQueue = new ConcurrentQueue<List<byte>>();
 		}
 
-		// 데이터를 받아와서 처리함
-		async public void Process(ReceiveResult target)
+		public bool IsMember(int userCode)
 		{
+			foreach (int user in enterUserList)
+			{
+				if (user == userCode)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		// 데이터를 받아와서 처리함
+		async public void Process(int userCode, ReceiveResult target)
+		{
+			if (!IsMember(userCode))
+				return;
+
+			switch(target.Key)
+			{
+				case DataType.MESSAGE:
+
+					break;
+
+				default:
+					break;
+			}
+
 			// if(target.serverCode == 0 && target.serverCode != this.serverCode)
 			// 서버코드가 0이거나 serverCode가 같지 않다면 잘못온 것이므로 처리하지 않는다.
 
@@ -160,6 +185,8 @@ namespace ServerSystem
 				this.title = info.title;
 				this.owner = info.adminCode;
 			}
+
+			// !Protocol Server메시지 전송
 		}
 
 		public void EnterUser(int userCode)
@@ -167,6 +194,8 @@ namespace ServerSystem
 			// !SQL 서버에 접근한 유저 추가
 			// 이미 들어온 적 있다면 코드만 변경
 			enterUserList.Add(userCode);
+
+			// !Protocol User메시지 전송
 		}
 
 		public void LeaveUser(int userCode)
@@ -174,6 +203,8 @@ namespace ServerSystem
 			// !SQL 서버에 퇴장한 유저 추가
 
 			enterUserList.Remove(userCode);
+
+			// !Protocol User메시지 전송
 		}
 
 		public void CreateChannel(int userCode, string title,int channelType)
@@ -206,15 +237,29 @@ namespace ServerSystem
 			// 채널의 생성자가 해당 유저라면
 			// if()
 			//{
-				// !SQL 채널 변경사항 DB 추가
+			// !SQL 채널 변경사항 DB 추가
 			//}
+
+			// !Protocol 채널 메시지 전송
+			// Send()
+		}
+
+		public void Message(int userCode, MessageProtocol.MESSAGE msg)
+		{
+			if (msg.creater != userCode)
+				return;
+
+			is
+
+
+			// !SQL 메시지 저장
+
+			Send(userCode, Generater.Generate(msg));
 		}
 
 
 		// 서버의 모든 사람에게 데이터를 전송한다.
-		// 외부에서 서버에게 요청하는 메소드
 		// 스레드와 비슷하게 작동해야 함
-		// 데이터를 DB에 적용하고 각 유저에게 보낼 수 있도록 가공 저장한다.
 		/*
 		private void Send(ReceiveResult target)
 		{
@@ -236,17 +281,7 @@ namespace ServerSystem
 		// 각 유저들에게 데이터를 전송
 		async private void Send(int userCode, List<byte> target)
 		{
-			bool check = true;
-			foreach(int user in enterUserList)
-			{
-				if (user == userCode)
-				{
-					check = false;
-					break;
-				}
-			}
-			if (check)
-				return;
+
 
 			Console.WriteLine(userCode + " : MessageSending");
 			foreach(var user in enterUserList)
