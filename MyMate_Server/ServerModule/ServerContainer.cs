@@ -2,8 +2,12 @@
 
 using Protocol;
 using System.Collections.Concurrent;
+using MyMate_DB_Module;
 
 using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
+using ServerToClient;
+using Convert = System.Convert;
+using System.Data;
 
 namespace ServerSystem
 {
@@ -38,12 +42,29 @@ namespace ServerSystem
 
 
 			// !SQL 서버 생성 후 서버코드 반환
+			SQL sql = new();
+
+			ServerParm serverParm = new ServerParm();
+
+			serverParm.title = title;
+			serverParm.adminCode = userCode;
+			serverParm.isSingle = Convert.ToInt32(false);   // 이부분 매개변수로 받는 부분 필요해보임
+
+			DataTable queryResult = new DataTable();
+
+            queryResult = sql.resultConnectDB((object)serverParm, "AddServer");
+
+			int serverCode = Convert.ToInt32(queryResult.Rows[0][0]);
+			
+			
+
 			// !Protocol 서버 생성 결과 전송
 
 			// server.serverCode = ;
 			// Console.WriteLine(": Fail to Create new Server");
 
-			UserServer server = new(userCode, 1, "temp");
+			
+			UserServer server = new(userCode, serverCode, "temp");
 
 			serverDict.Add(server.serverCode, server);
 			Console.WriteLine(server.serverCode + ": Complite to Create new Server");
@@ -64,6 +85,15 @@ namespace ServerSystem
 			// 서버코드의 크리에이터와 같은지 확인한 후 삭제한다.
 
 			// !SQL 서버 삭제 
+			SQL sql = new();
+
+			ServerParm serverParm = new ServerParm();
+
+			serverParm.serverCode = serverCode;
+			serverParm.adminCode = userCode;
+
+			// 서버 is_deleted 속성 true로 변경
+			sql.noResultConnectDB((object)serverParm, "RemoveServer");
 
 			// !Protocol Toast userCode에게 삭제 메시지 전송
 		}
@@ -181,6 +211,15 @@ namespace ServerSystem
 			if(userCode == owner)
 			{
 				// !SQL 서버 변경사항 DB 추가
+				SQL sql = new();
+
+				ServerParm serverParm = new ServerParm();
+
+				serverParm.serverCode = info.serverCode;
+				serverParm.adminCode = info.adminCode;
+				serverParm.title = info.title;
+
+				sql.noResultConnectDB((object)serverParm, "SetServer");
 
 				this.title = info.title;
 				this.owner = info.adminCode;
@@ -191,9 +230,18 @@ namespace ServerSystem
 
 		public void EnterUser(int userCode)
 		{
-			// !SQL 서버에 접근한 유저 추가
-			// 이미 들어온 적 있다면 코드만 변경
-			enterUserList.Add(userCode);
+            // !SQL 서버에 접근한 유저 추가
+            SQL sql = new();
+
+            ServerUserParm serverUserParm = new();
+
+            serverUserParm.serverCode = this.serverCode;
+            serverUserParm.userCode = userCode;
+
+            sql.noResultConnectDB((object)serverUserParm, "AddServeruser");
+
+            // 이미 들어온 적 있다면 코드만 변경
+            enterUserList.Add(userCode);
 
 			// !Protocol User메시지 전송
 		}
@@ -201,6 +249,16 @@ namespace ServerSystem
 		public void LeaveUser(int userCode)
 		{
 			// !SQL 서버에 퇴장한 유저 추가
+			SQL sql = new();
+
+			ServerUserParm serverUserParm = new();
+
+			serverUserParm.serverCode = this.serverCode;
+			serverUserParm.userCode = userCode;
+			serverUserParm.calIsPrivate = null;
+			serverUserParm.isDeleted = Convert.ToInt32(true);
+
+			sql.noResultConnectDB((object)serverUserParm,"SetServeruser");
 
 			enterUserList.Remove(userCode);
 
@@ -209,9 +267,22 @@ namespace ServerSystem
 
 		public void CreateChannel(int userCode, string title,int channelType)
 		{
-			int channelCode = 10;
+			//int channelCode = 10;
 			// Protocol.ChannelType.
 			// !SQL 서버에 채널 추가
+			SQL sql = new();
+
+			ChannelParm channelParm = new ChannelParm();
+
+			channelParm.serverCode = this.serverCode;
+			channelParm.title = title;
+			channelParm.state = channelType;
+
+			DataTable queryResult = new DataTable();
+
+			queryResult = sql.resultConnectDB((object)channelParm, "AddChannel");
+
+			int channelCode = Convert.ToInt32(queryResult.Rows[0][0]);
 
 			// 채널 생성 성공 시 채널코드 반환해야함
 			channelList.Add(channelCode);
@@ -222,6 +293,18 @@ namespace ServerSystem
 		public void DeleteChannel(int channelCode)
 		{
 			// !SQL 서버 채널 삭제 (isDelete 속성 fasle로 만들기)
+			SQL sql = new();
+
+			ChannelParm channelParm = new ChannelParm();
+
+			channelParm.serverCode = this.serverCode;
+			channelParm.channelCode = channelCode;
+			channelParm.state = null;
+			channelParm.title = null;
+			channelParm.isDeleted = Convert.ToInt32(true);
+
+			sql.noResultConnectDB((object)channelParm,"SetChannel");
+
 
 			// !Protocol 채널 삭제 메시지 전송
 			// Send()
@@ -232,8 +315,21 @@ namespace ServerSystem
 		{
 			if(userCode == owner)
 			{
-				// !SQL 채널 변경사항 DB 추가
-			}
+                // !SQL 채널 변경사항 DB 추가
+                SQL sql = new();
+
+                ChannelParm channelParm = new ChannelParm();
+
+                channelParm.serverCode = this.serverCode;      
+                channelParm.channelCode = info.channelCode;
+                channelParm.state = info.state;
+                channelParm.title = info.title;
+                channelParm.isDeleted = null;
+
+                sql.noResultConnectDB((object)channelParm, "SetChannel");
+
+
+            }
 			// 채널의 생성자가 해당 유저라면
 			// if()
 			//{
@@ -249,9 +345,23 @@ namespace ServerSystem
 			if (msg.creater != userCode)
 				return;
 
-			is
 
+			// !SQL 메시지 저장
+			SQL sql = new();
 
+			MessageParm messageParm = new MessageParm();
+
+			messageParm.channelCode = msg.channelCode;
+			messageParm.content= msg.content;
+            messageParm.creater = msg.creater;
+            messageParm.isDeleted = null;
+            messageParm.isPrivate = Convert.ToInt32(msg.isPrivate);
+            messageParm.messageCode = msg.messageCode;
+			messageParm.serverCode = msg.serverCode;
+			messageParm.startTime = msg.startTime.Ticks;
+
+			sql.noResultConnectDB((object)messageParm, "AddMessage");
+          
 			// !SQL 메시지 저장
 
 			Send(userCode, Generater.Generate(msg));

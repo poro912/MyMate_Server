@@ -3,10 +3,13 @@
 
 using System.Data;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
+using MyMate_DB_Module;
 using Org.BouncyCastle.Asn1.Utilities;
 using Protocol;
 
 using ServerToClient;
+using Convert = System.Convert;
 using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
 
 namespace ServerSystem
@@ -344,38 +347,71 @@ namespace ServerSystem
 		// 로그인 메소드
 		private bool Login(ReceiveResult result)
 		{
-			var login = result.Value as LoginProtocol.LOGIN;
+            var login = result.Value as LoginProtocol.LOGIN;
 
 			if (login == null)
 			{
-				return false;
+                return false;
 			}
 
 			Console.WriteLine(userCode + ": Logging in...");
 			Console.WriteLine(userCode + ": ID \"" + login.id + "\" has been attempted.");
 
 			// !SQL 로그인 시도
+			// SQL 객체 생성
+			SQL sql = new();
+
+			// UserParm 객체 생성
+			UserParm userParm = new UserParm();
+
+			// UserParm 값 할당
+			userParm.id = login.id;
+			userParm.pwd = login.pw;
+
+			// 로그인 결과 받아올 DataTable 객체 생성
+			DataTable queryResult = new DataTable();
+
+			// 로그인 query 실행
+            queryResult = sql.resultConnectDB((object)userParm,"Login");
+
+			Console.WriteLine(queryResult.Rows[0][0]);
 
 			// 로그인 성공 시 작동할 부분
-			if (true)
+			if (queryResult.Rows[0][0] is true)
 			{
+				Console.WriteLine("here");
 				// 로그인 컨테이너 정보를 가져옴
 				var container = LoginContainer.Instance;
 
 				// 로그인 이전 이벤트를 끊는다.
 				BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
 
-				// 유저의 데이터를 전송 가능한 형태로 집어 넣는다.
-				LoginUserProtocol.LOGINUSER user = new LoginUserProtocol.LOGINUSER();
-				user.userCode = 10;
-				user.name = "admin";
-				user.nickname = "poro";
-				user.email = "angus99@naver.com";
-				user.phone = "010-8355-3460";
-					//LoginUserProtocol.LOGINUSER(10, "admin", "poro", "angus99@naver.com", "010-8355-3460");
+                // 유저의 데이터를 전송 가능한 형태로 집어 넣는다.
+                LoginUserProtocol.LOGINUSER user = new LoginUserProtocol.LOGINUSER();
+
+				// 유저 코드 가져오는 query 실행 및 유저 코드 할당
+                queryResult = sql.resultConnectDB((object)userParm, "GetUserCode");
+				user.userCode = Convert.ToInt32(queryResult.Rows[0]["U_code"]);
+
+				//user.userCode = 10;
+				
+				// 유저 정보 가져기 위해서 UserParm 값 할당
+				userParm.dataFormat = null;
+
+				// 유저 정보 가져오는 query 실행
+				queryResult = sql.resultConnectDB((object)userParm, "GetUser");
+
+				// 유저 정보 할당
+				user.name = queryResult.Rows[0]["U_name"].ToString();
+				user.nickname = queryResult.Rows[0]["U_nick"].ToString();
+				user.email = queryResult.Rows[0]["U_email"].ToString();
+				user.phone = queryResult.Rows[0]["U_phone"].ToString();
+				//LoginUserProtocol.LOGINUSER(10, "admin", "poro", "angus99@naver.com", "010-8355-3460");
+
+				Console.WriteLine($"{user.name}, {user.nickname}, {user.email}, {user.phone}");
 
 				// 로그인 정보 삽입
-				userCode = 10;
+				userCode = user.userCode;
 				isLogin = true;
 
 				// 로그인 컨테이너에 유저 정보 등록
@@ -391,46 +427,7 @@ namespace ServerSystem
 				return true;
 			}
 
-			/* SQL 코드로 로그인을 시도하는 부분
-			SQL sql = new();
-
-			if (sql.noResultConnectDB(login.id, login.pw, sql.Login))
-			{
-				DataTable dataTable = new();
-
-				dataTable = sql.resultConnectDB(login.id, sql.GetUserinfo);
-
-				if (dataTable == null)
-				{
-					bytes = new();
-					Generater.Generate("ID does not exist.", ref bytes);
-					SendData(bytes);
-				}
-				else
-				{
-					isLogin = true;
-					userCode = (int)dataTable.Rows[0]["U_code"];
-
-					var container = LoginContainer.Instance;
-					
-					container.registUser((int)userCode, this);
-
-					var id = dataTable.Rows[0]["U_id"].ToString();
-					var name = dataTable.Rows[0]["U_name"].ToString();
-					var nickname = dataTable.Rows[0]["U_Nickname"].ToString();
-					var phone = dataTable.Rows[0]["U_phone"].ToString();
-
-					UserInfoProtocol.User user = new((int)userCode, id, name, nickname, phone);
-					bytes = new();
-					Generater.Generate(user, ref bytes);
-					SendData(bytes);
-
-					BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
-					
-					Console.WriteLine(userCode + ": Login succeeded.");
-				}
-			}
-			*/
+			return true;
 		}
 
 		// 로그아웃 메소드
@@ -488,8 +485,28 @@ namespace ServerSystem
 			ToastProtocol.TOAST toast = new(0, "회원가입 시도");
 			Send(Generater.Generate(toast));
 
+			// SQL 객체 생성
+			SQL sql = new();
+
+            // UserParm 객체 생성
+            UserParm userParm = new UserParm();
+
+			// UserParm 객체 값 할당
+			userParm.id = siginUp.id;
+			userParm.pwd = siginUp.password;
+			userParm.name = siginUp.name;
+			userParm.nick = siginUp.nickname;
+			userParm.email = siginUp.email;
+			userParm.phone = siginUp.phone;
+
+			if (!sql.checkValue((object)userParm))
+			{
+				// 유효성 검사 실패
+				return false;
+			}
+
 			// !SQL 회원가입 
-			if (true) // (SQL.SIGNUP())
+			if (sql.noResultConnectDB((object)userParm, "Signin")) // (SQL.SIGNUP())
 			{
 				// 성공시 
 				// !Protocol Toast 회원가입 성공
