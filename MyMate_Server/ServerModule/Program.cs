@@ -5,6 +5,8 @@ using ServerCommunicater = ServerToClient.Server;
 using ServerSystem;
 using System.Data;
 
+Console.WriteLine("MyMate Server Start");
+
 // 서버 생성
 ServerCommunicater server = ServerCommunicater.Instance;
 server.clientAccept = AcceptProcess.AccpetRun;
@@ -15,6 +17,8 @@ LoginContainer login = LoginContainer.Instance;
 
 // 서버 리스트의 데이터를 저장하는 컨테이너
 ServerContainer serverContain = ServerContainer.Instance;
+
+Console.WriteLine("Server ip : " + Default.Network.Address);
 
 // 1분마다 비 로그인 클라이언트가 연결 됐는지 확인하기위한 메소드
 //BeforeLoginEvent.ConnectCheckThread();

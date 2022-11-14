@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\MyMate_Network\MyMate_Network\ServerNetwork\ServerNetwork.csproj" />
     <ProjectReference Include="..\ServerModule\ServerSystem.csproj" />
   </ItemGroup>
 

@@ -1,6 +1,6 @@
 ﻿using MyMate_Server;
 using MySql.Data.Types;
-using ServerNetwork;
+//using ServerNetwork;
 using ServerSystem;
 using System;
 using System.Data;
