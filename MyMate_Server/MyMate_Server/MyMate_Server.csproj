@@ -8,11 +8,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MySql.Data" Version="8.0.30" />
+    <PackageReference Include="MySql.Data" Version="8.0.31" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\MyMate_Network\MyMate_Network\ServerNetwork\ServerNetwork.csproj" />
+    <ProjectReference Include="..\ServerModule\ServerSystem.csproj" />
   </ItemGroup>
 
 </Project>

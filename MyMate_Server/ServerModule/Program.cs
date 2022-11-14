@@ -1,10 +1,12 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using ServerNetwork;
-using ServerNetwork.Module;
+using ServerToClient;
+using ServerCommunicater = ServerToClient.Server;
 using ServerSystem;
+using System.Data;
 
-Server server = Server.Instance;
+// 서버 생성
+ServerCommunicater server = ServerCommunicater.Instance;
 server.clientAccept = AcceptProcess.AccpetRun;
 
 // 로그인 이전의 데이터가 저장되는 컨테이너 (큐)
@@ -14,8 +16,11 @@ server.clientAccept = AcceptProcess.AccpetRun;
 // 로그인 이후의 데이터가 저장되는 컨테이너 (사전)
 LoginContainer login = LoginContainer.Instance;
 
+// 서버 리스트의 데이터를 저장하는 컨테이너
+
 while (true)
 {
+	// 프로세스과부화를 막기위한 sleep
 	Thread.Sleep(5000);
 
 	//BeforeLoginEvent.ConnectCheck();

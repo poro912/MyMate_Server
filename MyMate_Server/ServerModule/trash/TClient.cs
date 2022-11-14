@@ -1,5 +1,6 @@
-﻿using System;
+﻿/*using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Net.Sockets;
 using System.Text;
@@ -47,7 +48,7 @@ namespace ServerSystem
 			Console.WriteLine("이벤트로 일어났음");
 
 			// 가장 최근의 통신이 끊어진 상태라면
-			if(!this.receive.stream.Socket.Connected)
+			if(!this.tcpClient.Connected)
 			{
 				this.Delete();
 				return;
@@ -91,6 +92,8 @@ namespace ServerSystem
 
 				if (DataType.LOGIN == result.Key)
 					LoginProcess(result);
+
+				
 			}
 		}
 
@@ -107,8 +110,11 @@ namespace ServerSystem
 				// 읽어온 데이터가 없다면 Continue
 				if (null == result.Value)
 					continue;
-			}
-		}
+
+                // 요청에 따른 처리 조건문들 작성해야하는 위치
+
+            }
+        }
 
 		private void LoginProcess(RcdResult result)
 		{
@@ -122,8 +128,11 @@ namespace ServerSystem
 			Console.WriteLine("로그인 시도");
 			Console.WriteLine("id : " + login.id);
 
+			// SQL객체 생성
+			SQL sql = new SQL();
+
 			// 형 변환에 성공한 경우 DB에서 ID PW 확인
-			if(login.id.Equals("admin"))
+			if(sql.noResultConnectDB(login.id, login.pw, sql.Login))
 			{
 				Console.WriteLine("로그인 성공");
 
@@ -132,8 +141,17 @@ namespace ServerSystem
 
 				// 로그인 컨테이너에 자기 자신 등록
 				LoginContainer.Instance.registUser((int)this.usercode, this);
+				
+				// 사용자 정보를 받을  datatable 객체 생성
+				DataTable tb = new DataTable();
+				// DB에서 user 객체를 생성할 때 필요한 정보 가져오기
+				tb = sql.resultConnectDB(login.id,sql.GetUserinfo);
+				Console.WriteLine("id : " + tb.Rows[0]["U_id"].ToString());
+                Console.WriteLine("name : " + tb.Rows[0]["U_name"].ToString());
+                Console.WriteLine("nick : " + tb.Rows[0]["U_Nickname"].ToString());
+                Console.WriteLine("phone : " + tb.Rows[0]["U_phone"].ToString());
 
-				UserInfoProtocol.User user = new(1234, "admin", "poro", "poro","010-8355-3460");
+                UserInfoProtocol.User user = new(1234, tb.Rows[0]["U_id"].ToString(), tb.Rows[0]["U_name"].ToString(), tb.Rows[0]["U_Nickname"].ToString(), tb.Rows[0]["U_phone"].ToString());
 				bytes = new();
 				Generater.Generate(user, ref bytes);
 				SendCheck(bytes);
@@ -149,7 +167,7 @@ namespace ServerSystem
 			try
 			{
 				this.send.Data(bytes);
-				if(!send.Stream.Socket.Connected)
+				if(!tcpClient.Connected)
 					throw new Exception("통신 끊어짐");
 			}
 			catch (Exception e)
@@ -170,7 +188,7 @@ namespace ServerSystem
 			{
 				SendCheck(temp);
 				// 가장 최근의 통신이 끊어진 상태라면
-				if (!this.send.Stream.Socket.Connected)
+				if (!this.tcpClient.Connected)
 					throw new Exception("통신 끊어짐");
 			}
 			catch (Exception e)
@@ -199,4 +217,4 @@ namespace ServerSystem
 			this.receive.Stop();
 		}
 	}
-}
+}*/

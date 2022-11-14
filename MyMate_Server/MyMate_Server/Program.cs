@@ -1,22 +1,10 @@
 ﻿using MyMate_Server;
-using MyMate_Server.ServerModule;
-
+using MySql.Data.Types;
 using ServerNetwork;
+using ServerSystem;
+using System;
+using System.Data;
+//using DBM = MyMate_Server.DBModule;
+// 스테틱 클래스 생성하는 방식
 
 
-Server server = Server.Instance;
-
-
-
-
-
-
-// 클래스 만들어서 스레드
-
-// 통신, db
-
-do
-{
-
-}
-while (true);

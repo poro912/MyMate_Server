@@ -1,5 +1,4 @@
 ﻿using Protocol;
-using Protocol.Protocols;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -7,9 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ServerSystem
+namespace ServerSystem.trash
 {
-	/*
+    /*
 	public class BeforeContainer
 	{
 		// 싱글톤 구현

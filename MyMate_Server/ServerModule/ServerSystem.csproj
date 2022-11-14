@@ -8,8 +8,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\MyMate_Network\MyMate_Network\Protocal\Protocol.csproj" />
-    <ProjectReference Include="..\..\MyMate_Network\MyMate_Network\ServerNetwork\ServerNetwork.csproj" />
+    <PackageReference Include="MySql.Data" Version="8.0.31" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MyMate_DB_Module">
+      <HintPath>..\..\DLL\MyMate_DB_Module.dll</HintPath>
+    </Reference>
+    <Reference Include="MyMate_Network_Library">
+      <HintPath>..\..\MyMate_Network\DLL\MyMate_Network_Library.dll</HintPath>
+    </Reference>
+    <Reference Include="ServerToClient">
+      <HintPath>..\..\MyMate_Network\DLL\ServerToClient.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
