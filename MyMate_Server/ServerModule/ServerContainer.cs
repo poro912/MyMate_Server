@@ -8,6 +8,7 @@ using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
 using ServerToClient;
 using Convert = System.Convert;
 using System.Data;
+using System.Globalization;
 
 namespace ServerSystem
 {
@@ -89,7 +90,7 @@ namespace ServerSystem
 		public void ServerDelete(int serverCode, int userCode)
 		{
 			// 서버코드의 크리에이터와 같은지 확인한 후 삭제한다.
-
+			Console.WriteLine(serverCode + "\t: Delete Server");
 			// !SQL 서버 삭제 
 			SQL sql = new();
 
@@ -153,7 +154,6 @@ namespace ServerSystem
 		// send queue와 세마포 선언
 		//private ConcurrentQueue<List<byte>> sendQueue;
 
-
 		public UserServer(int owner, int serverCode, string title)
 		{
 			this.serverCode = serverCode;
@@ -200,6 +200,8 @@ namespace ServerSystem
 				this.title = info.title;
 				this.owner = info.adminCode;
 
+				Console.WriteLine(serverCode + " : Success to Server information Modified");
+
 				// 데이터 전송
 				this.Send(userCode, Generater.Generate(new ServerProtocol.Server(this.serverCode, this.title, this.owner)));
 			}
@@ -212,7 +214,9 @@ namespace ServerSystem
 
             ServerUserParm serverUserParm = new();
 
-            serverUserParm.serverCode = this.serverCode;
+			Console.WriteLine(serverCode + " : User Enter the Server\tuser\t: " + userCode);
+
+			serverUserParm.serverCode = this.serverCode;
             serverUserParm.userCode = userCode;
 
             sql.noResultConnectDB((object)serverUserParm, "AddServeruser");
@@ -244,6 +248,8 @@ namespace ServerSystem
 			if (!IsMember(userCode))
 				return;
 
+			Console.WriteLine(serverCode + " : User Leave the Server\tuser\t:" + userCode);
+
 			ServerUserParm serverUserParm = new();
 
 			serverUserParm.serverCode = this.serverCode;
@@ -261,6 +267,7 @@ namespace ServerSystem
 
 		public void CreateChannel(int userCode, ChannelProtocol.CHANNEL channel)
 		{
+			Console.WriteLine(serverCode + " : Create new Channel\ttype\t: " + channel.type);
 			if (!IsMember(userCode))
 				return;
 
@@ -292,6 +299,7 @@ namespace ServerSystem
 
 		public void DeleteChannel(int userCode, int channelCode)
 		{
+			Console.WriteLine(serverCode + " : Delete Channel\tChannel\t: " + channelCode);
 			if (userCode != owner)
 				return;
 			// !SQL 서버 채널 삭제 (isDelete 속성 fasle로 만들기)
@@ -317,7 +325,7 @@ namespace ServerSystem
 		{
 			// !SQL 채널 변경사항 DB 추가
 			SQL sql = new();
-
+			Console.WriteLine(serverCode + " : Modify or Delete Channel\tChannel\t: " + info.channelCode);
 			ChannelParm channelParm = new ChannelParm();
 
 			channelParm.serverCode = this.serverCode;
@@ -336,13 +344,16 @@ namespace ServerSystem
 			//}
 
 			// !Protocol 채널 메시지 전송
-			// Send()
+			//
+			Send(userCode, Generater.Generate(info));
 		}
 
 		public void Message(int userCode, MessageProtocol.MESSAGE msg)
 		{
 			if (msg.creater != userCode)
 				return;
+
+			Console.WriteLine(serverCode + " : Message Send\tuser\t: " + msg.creater);
 
 			// !SQL 메시지 저장
 
@@ -363,7 +374,8 @@ namespace ServerSystem
 		}
 		public void CreateCalendar(int userCode, CalenderProtocol.CALENDER calendar)
 		{
-			// !SQL 채널 생성
+			Console.WriteLine(serverCode + " : Create new Calender");
+			// !SQL 캘린더 생성
 			if (!IsMember(userCode))
 				return;
 
@@ -379,6 +391,7 @@ namespace ServerSystem
 		}
 		public void ModifyCalendar(int userCode, CalenderProtocol.CALENDER calendar)
 		{
+			Console.WriteLine(serverCode + " : Modify or Delete Calendar\tCalendar\t: " + calendar.channelCode);
 			// !SQL 채널 변경
 			if (!IsMember(userCode))
 				return;
@@ -388,7 +401,8 @@ namespace ServerSystem
 		}
 		public void CreateChecklist(int userCode, CheckListProtocol.CHECKLIST check)
 		{
-			// !SQL 채널 생성
+			Console.WriteLine(serverCode + " : Create new Checklist");
+			// !SQL 체크리스트 생성
 			if (!IsMember(userCode))
 				return;
 
@@ -404,7 +418,8 @@ namespace ServerSystem
 		}
 		public void ModifyChecklist(int userCode, CheckListProtocol.CHECKLIST check)
 		{
-			// !SQL 채널 변경
+			Console.WriteLine(serverCode + " : Modify or Delete Checklist\tChecklist\t: " + check.checkListCode);
+			// !SQL 체크리스트 변경
 			if (!IsMember(userCode))
 				return;
 

@@ -115,10 +115,11 @@ namespace ServerSystem
 			ServerProtocol.Server? target = result.Value as ServerProtocol.Server;
 			if (null == target)
 				return;
-
+			
 			// 생성
-			if(target.serverCode == 0)
+			if (target.serverCode == 0)
 			{
+				Console.WriteLine(userCode + "\t: Create Server");
 				// create server 호출
 				ServerContainer.Instance.ServerCreate(userCode, target.title, target.isSingle);
 
@@ -126,6 +127,7 @@ namespace ServerSystem
 				return;
 			}
 
+			Console.WriteLine(userCode + "\t: Modify Server");
 			// 서버정보 수정
 			UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
 
@@ -152,6 +154,7 @@ namespace ServerSystem
 				// 개인 채널 생성
 				if (0 == target.serverCode)
 				{
+					Console.WriteLine(userCode + "\t: Create User Channel");
 					//ChannelType.Calender;
 					// !SQL 개인 채널 생성
 
@@ -164,6 +167,7 @@ namespace ServerSystem
 				// 서버 채널 생성
 				else
 				{
+					Console.WriteLine(userCode + "\t: Create Server Channel");
 					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
 					if (null == server)
 						return;
@@ -176,8 +180,8 @@ namespace ServerSystem
 				// 개인 채널 변경
 				if (0 == target.serverCode)
 				{
+					Console.WriteLine(userCode + "\t: Modify User Channel");
 					// !SQL 개인 채널 변경
-
 					user = LoginContainer.Instance.GetUser(userCode);
 					if (user != null)
 						user.Send(Generater.Generate(target));
@@ -185,6 +189,8 @@ namespace ServerSystem
 				// 서버 채널 변경
 				else
 				{
+					Console.WriteLine(userCode + "\t: Modify Server Channel");
+
 					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
 					if (null == server)
 						return;
@@ -197,6 +203,7 @@ namespace ServerSystem
 		{
 			// 메시지를 result에 등록된 서버에 전달한다.
 			MessageProtocol.MESSAGE? target = result.Value as MessageProtocol.MESSAGE;
+			Console.WriteLine(userCode + "\t: Message Send");
 
 			if (null == target)
 				return;
@@ -225,6 +232,7 @@ namespace ServerSystem
 				// 개인 일정 생성
 				if (0 == target.serverCode)
 				{
+					Console.WriteLine(userCode + "\t: Create User Calendar");
 					// !SQL 개인 일정 생성
 
 					target.calenderCode = 10;
@@ -236,6 +244,7 @@ namespace ServerSystem
 				// 서버 일정 생성
 				else
 				{
+					Console.WriteLine(userCode + "\t: Create Server Calendar");
 					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
 					if (null == server)
 						return;
@@ -248,6 +257,7 @@ namespace ServerSystem
 				// 개인 일정 변경
 				if (0 == target.serverCode)
 				{
+					Console.WriteLine(userCode + "\t: Modify User Calendar");
 					// !SQL 개인 일정 변경
 
 					user = LoginContainer.Instance.GetUser(userCode);
@@ -257,6 +267,7 @@ namespace ServerSystem
 				// 서버 일정 변경
 				else
 				{
+					Console.WriteLine(userCode + "\t: Modify Server Calendar");
 					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
 					if (null == server)
 						return;
@@ -278,6 +289,7 @@ namespace ServerSystem
 				// 개인 체크리스트 생성
 				if (0 == target.serverCode)
 				{
+					Console.WriteLine(userCode + "\t: Create User Checklist");
 					// !SQL 개인 체크리스트 생성
 
 					target.checkListCode = 10;
@@ -289,6 +301,7 @@ namespace ServerSystem
 				// 서버 체크리스트 생성
 				else
 				{
+					Console.WriteLine(userCode + "\t: Create Server Checklist");
 					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
 					if (null == server)
 						return;
@@ -301,6 +314,7 @@ namespace ServerSystem
 				// 개인 체크리스트 변경
 				if (0 == target.serverCode)
 				{
+					Console.WriteLine(userCode + "\t: Modify User Checklist");
 					// !SQL 개인 체크리스트 변경
 
 					user = LoginContainer.Instance.GetUser(userCode);
@@ -310,6 +324,8 @@ namespace ServerSystem
 				// 서버 체크리스트 변경
 				else
 				{
+					Console.WriteLine(userCode + "\t: Modify Server Checklist");
+
 					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
 					if (null == server)
 						return;
@@ -322,12 +338,15 @@ namespace ServerSystem
 		{
 			FriendProtocol.FRIEND? target = result.Value as FriendProtocol.FRIEND;
 			Client? user;
-			Console.WriteLine(userCode + "\t: Modify User Infomation");
+
+			Console.Write(".");
 
 			if (null == target)
 				return;
 			if (target.userCode != userCode)
 				return;
+
+			Console.WriteLine(userCode + "\t: Create or Modify friend\ttarget\t:" + target.friendId);
 
 			SQL sql = new();
 			DataTable? queryResult;
@@ -354,13 +373,14 @@ namespace ServerSystem
 		public static void InviteMethod(int userCode, ReceiveResult result)
 		{
 			InviteProtocol.Invite? target = result.Value as InviteProtocol.Invite;
-			Client? user;
-			Console.WriteLine(userCode + "\t: Modify User Infomation");
+			Console.Write(".");
 
 			if (null == target)
 				return;
 			if (target.userCode != userCode)
 				return;
+
+			Console.WriteLine(userCode + "\t: Server Invite\tServer\t:" + target.serverCode);
 
 			// 서버정보 수정
 			UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
@@ -374,6 +394,7 @@ namespace ServerSystem
 
 		public static void DefaultMethod(int userCode, ReceiveResult result)
 		{
+			Console.WriteLine(userCode + "\t: Invalid access");
 			Client? target = LoginContainer.Instance.GetUser(userCode);
 			if (null == target)
 				return;

@@ -24,7 +24,7 @@ namespace ServerSystem
 		// 유저 정보
 		async public static Task<bool> UserRequest(UserClient user, int userCode, string id = "")
 		{
-			Console.WriteLine(user.UserCode + " : 상대 유저에 대한 정보를 전송\t대상 : " + userCode);
+			Console.WriteLine(user.UserCode + "\t: 상대 유저에 대한 정보를 전송\t대상\t:" + userCode);
 			// !SQL 해당 유저에 대한 프로필 정보를 받아옴
 			// SQL 객체 생성
 			SQL sql = new();
@@ -101,7 +101,7 @@ namespace ServerSystem
 		// 유저 채널 리스트
 		async public static Task<bool> UserChannelRequest(UserClient user, int userCode, int ChannelCode = 0)
 		{
-			Console.WriteLine(user.UserCode + " : 유저 채널 정보를 전송");
+			Console.WriteLine(user.UserCode + "\t: 유저 채널 정보를 전송");
 			// !SQL userChnnel에 대한 정보를 받아옴
 			SQL sql = new();
 
@@ -150,7 +150,7 @@ namespace ServerSystem
 		// 유저 캘린더 정보
 		async public static Task<bool> UserCalenderRequest(UserClient user, int userCode, int channel = 0)
 		{
-			Console.WriteLine(user.UserCode + " : 유저에 캘린더 정보를 전송\t대상 채널 : " + channel);
+			Console.WriteLine(user.UserCode + "\t: 유저 캘린더 정보를 전송\t대상 채널\t: " + channel);
 
 			// SQL 객체 생성
 			SQL sql = new();
@@ -223,7 +223,7 @@ namespace ServerSystem
 		// 유저 프로젝트 정보
 		async public static Task<bool> UserProjectRequest(UserClient user, int userCode, int channel = 0)
 		{
-			Console.WriteLine(user.UserCode + " : 유저에 프로젝트 정보를 전송\t대상 채널 : " + channel);
+			Console.WriteLine(user.UserCode + "\t: 유저 프로젝트 정보를 전송\t대상 채널\t: " + channel);
 			// !SQL userProject에 대한 정보를 받아옴
 			SQL sql = new();
 
@@ -289,7 +289,7 @@ namespace ServerSystem
 		// 서버 정보
 		async public static Task<bool> ServerRequest(UserClient user, int userCode, int serverCode = 0)
 		{
-			Console.WriteLine(user.UserCode + " : 서버에 대한 정보를 전송\t대상서버 : " + serverCode);
+			Console.WriteLine(user.UserCode + "\t: 서버 정보를 전송\t대상서버\t: " + serverCode);
 			// !SQL 해당 서버에 대한 정보를 받아옴
 
 			SQL sql = new();
@@ -339,7 +339,7 @@ namespace ServerSystem
 
 		async public static Task<bool> ServerChannelRequest(UserClient user, int userCode, int serverCode = 0)
 		{
-			Console.WriteLine(user.UserCode + " : 서버 채널 정보를 전송\t대상서버 : " + serverCode);
+			Console.WriteLine(user.UserCode + "\t: 서버 채널 정보를 전송\t대상서버\t: " + serverCode);
 
 			SQL sql = new();
 
@@ -380,7 +380,7 @@ namespace ServerSystem
 
 		async public static Task<bool> ServerCalenderRequest(UserClient user, int userCode, int serverCode, int channel = 0)
 		{
-			Console.WriteLine(user.UserCode + " : 서버 캘린더 정보를 전송\t대상서버 : " + serverCode + "\t대상 채널 : " + channel);
+			Console.WriteLine(user.UserCode + "\t: 서버 캘린더 정보를 전송\t대상서버\t: " + serverCode + "\t대상 채널\t: " + channel);
 
 			// !SQL 서버의 캘린더 정보를 받아옴
 			SQL sql = new();
@@ -432,7 +432,7 @@ namespace ServerSystem
 
 		async public static Task<bool> ServerProjectRequest(UserClient user, int userCode, int serverCode, int channel = 0)
 		{
-			Console.WriteLine(user.UserCode + " : 서버 프로젝트 정보를 전송\t대상서버 : " + serverCode + "\t대상 채널 : " + channel);
+			Console.WriteLine(user.UserCode + "\t: 서버 프로젝트 정보를 전송\t대상서버\t: " + serverCode + "\t대상 채널\t: " + channel);
             SQL sql = new();
 
 			ChecklistParm checklistParm = new();
@@ -483,7 +483,7 @@ namespace ServerSystem
 
 		async public static Task<bool> ServerMessageRequest(UserClient user, int userCode, int serverCode, int channel = 0, DateTime? start = null, DateTime? end = null)
 		{
-			Console.WriteLine(user.UserCode + " : 서버 메시지 정보를 전송\t대상서버 : " + serverCode + "\t대상 채널 : " + channel);
+			Console.WriteLine(user.UserCode + "\t: 서버 메시지 정보를 전송\t대상서버\t: " + serverCode + "\t대상 채널\t: " + channel);
 
 			// !SQL 서버의 해당 채널의 메시지들을 받아옴
             SQL sql = new();
@@ -540,7 +540,7 @@ namespace ServerSystem
 		
 		async public static Task<bool> UserFriend(UserClient user, int userCode)
 		{
-			Console.WriteLine(user.UserCode + " : 유저의 친구 정보를 전송\t대상 : " + userCode);
+			Console.WriteLine(user.UserCode + "\t: 유저의 친구 정보를 전송\t대상\t: " + userCode);
             // !SQL 해당 유저에 대한 친구 목록을 받아 전송
             SQL sql = new();
 
