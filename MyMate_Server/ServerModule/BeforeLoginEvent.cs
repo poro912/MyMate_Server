@@ -22,7 +22,6 @@ namespace ServerSystem
 				Connect_check_event -= value;
 			}
 		}
-
 		// 이벤트를 등록한 모든 객체를 호출하여 연결 상태를 확인한다.
 		static public void ConnectCheck()
 		{
@@ -31,7 +30,18 @@ namespace ServerSystem
 			{
 				Connect_check_event();
 			}
+			// 호출 간소화
+			// Connect_check_event?.Invoke();
 		}
-
+		async static public void ConnectCheckThread()
+		{
+			// 1분마다 연결됐는지 확인.
+			while(true)
+			{
+				Console.WriteLine(": 비로그인 클라이언트가 연결 상태인지 확인\n");
+				ConnectCheck();
+				Thread.Sleep(60000);
+			}
+		}
 	}
 }

@@ -1,11 +1,10 @@
-﻿#pragma warning disable CS1998
-#pragma warning disable CS4014
+﻿#pragma warning disable CS1998		// null 역참조
+#pragma warning disable CS4014		// async
 
 using System.Data;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using MyMate_DB_Module;
-using Org.BouncyCastle.Asn1.Utilities;
 using Protocol;
 
 using ServerToClient;
@@ -14,7 +13,6 @@ using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
 
 namespace ServerSystem
 {
-
 	public class UserClient : Client
 	{
 		// 접속한 유저의 Code를 저장
@@ -28,6 +26,7 @@ namespace ServerSystem
 					return userCode.Value;
 			}
 		}
+
 		// 로그인 상태인지 확인
 		private bool isLogin;
 		// 객체에 접근하는 객체의 수를 제한(Send)
@@ -36,6 +35,9 @@ namespace ServerSystem
 		private List<byte>? bytes = new();
 		// 결과값을 임시로 저장하는 객체 변수
 		private ReceiveResult result;
+		// SQL에 접근하기 위한 객체
+		private SQL sql;
+		private DataTable queryResult;
 
 		public UserClient(TcpClient tcpClient) :
 			base(tcpClient)
@@ -49,12 +51,16 @@ namespace ServerSystem
 			// 최초연결시는 로그인 이전이므로 로그인 이전의 이벤트에 연결
 			// 로그인 이전이라면 지속적으로 데이터를 보내 연결상태가 맞는지 확인한다.
 			BeforeLoginEvent.ConnectCheckEvent += CheckConnection;
+
+			// SQL 객체 생성
+			SQL sql = new();
+			queryResult = new DataTable();
 		}
 
 		// Receive로 일어나기 위한 코드
 		private void WakeUp()
 		{
-			Console.WriteLine(userCode + ": Receive event is occurred.");
+			Console.WriteLine(userCode + "\t: Receive event is occurred.");
 
 			// 연결 상태가 아니라면
 			if (!tcpClient.Connected)
@@ -78,17 +84,16 @@ namespace ServerSystem
 				Disconnection();
 			}
 
-
 			// 세마포어 획득을 시도
 			if (!semaphore.WaitOne(10))
 			{
 				return;
 			}
 
-			Console.WriteLine(userCode + ": Semaphore is assigned.");
+			Console.WriteLine(userCode + "\t: Semaphore is assigned.");
 
-			// Receive 큐가 비어있는지 확인
-			if (!IsEmpty())
+			// Receive 큐가 빌때까지 반복
+			while (!IsEmpty())
 			{
 				// 로그인 상태라면
 				if (isLogin)
@@ -104,50 +109,51 @@ namespace ServerSystem
 			}
 
 			// 세마포어 반환
-			Console.WriteLine(userCode + ": Semaphore is returned.");
+			Console.WriteLine(userCode + "\t: Semaphore is returned.\n");
 			semaphore.Release();
 		}
 
 		// 로그인 이전의 처리 (로그인, 회원가입)
 		private void BeforeLogin()
 		{
-			// 큐가 빌때까지 반복
-			while (!IsEmpty())
-			{
-				// 수신받은 정보를 받아온다.
-				result = Receive();
 
-				// 결과값이 null 이라면 다음 데이터를 읽어온다.
-				if (result.Value == null)
-				{
-					continue;
-				}
-				
-				switch (result.Key)
-				{
-					case DataType.LOGIN:
-						// 로그인 시도
-						if(Login(result))
-						{
-							// 로그인 성공시
-							Console.WriteLine(userCode + ": Success Login ");
-							
-							// 필요한 기본 데이터 전부 전송
-							BaseDataSend();
-							return;
-						}
-						break;
-					case DataType.SIGNUP:
-						// 회원가입 시도
-						if(SignUp(result))
-						{
-							Console.WriteLine(userCode + ": Success SignUp");
-						}
-						break;
-					default:
-						Console.WriteLine(userCode + ": 현재 상태에서는 사용할 수 없는 명령");
-						break;
-				}
+			// 수신받은 정보를 받아온다.
+			result = Receive();
+
+			switch (result.Key)
+			{
+				case DataType.LOGIN:
+					// 로그인 시도
+					if (Login(result))
+					{
+						// 로그인 성공시
+						Console.WriteLine(userCode + "\t: Login Successed");
+						// 필요한 기본 데이터 전부 전송
+						BaseDataSend();
+						return;
+					}
+					else
+					{
+						Console.WriteLine(userCode + "\t: Login Failed");
+						Send(Generater.Generate(new ToastProtocol.TOAST(0, "Login", "Login Failed")));
+					}
+					break;
+				case DataType.SIGNUP:
+					// 회원가입 시도
+					if (SignUp(result))
+					{
+						Console.WriteLine(userCode + "\t: SignUp Successed");
+						Send(Generater.Generate(new ToastProtocol.TOAST(0, "SignUp", "SignUp Successed")));
+					}
+					else
+					{
+						Console.WriteLine(userCode + "\t: SignUp Failed");
+						Send(Generater.Generate(new ToastProtocol.TOAST(0, "SignUp", "SignUp Failed")));
+					}
+					break;
+				default:
+					Console.WriteLine(userCode + "\t: 현재 상태에서는 사용할 수 없는 명령");
+					break;
 			}
 		}
 
@@ -194,7 +200,7 @@ namespace ServerSystem
 				// 연결이 끊겼다면
 				if (!tcpClient.Connected)
 				{
-					Console.WriteLine(userCode + ": User Client is Disconnected.");
+					Console.WriteLine(userCode + "\t: User Client is Disconnected.");
 					throw new Exception();
 				}
 			}
@@ -227,7 +233,7 @@ namespace ServerSystem
 				// 연결이 끊겼다면
 				if (!tcpClient.Connected)
 				{
-					Console.WriteLine(userCode + ": User Client is Disconnected.");
+					Console.WriteLine(userCode + "\t: User Client is Disconnected.");
 					throw new Exception();
 				}
 				base.Send(dummy);
@@ -249,8 +255,7 @@ namespace ServerSystem
 		// 소켓을 닫기위한 메소드
 		public void Disconnection()
 		{
-			Console.WriteLine(userCode + ": User Client is Disconnected.");
-
+			Console.WriteLine(userCode + "\t: User Client is Disconnected.");
 			// 로그인 이전 이벤트 끊기
 			BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
 			// Receive 이벤트를 끊는다.
@@ -258,6 +263,11 @@ namespace ServerSystem
 			// Recevie를 종료한다.
 			StopReceive();
 			
+			if(isLogin)
+			{
+				Console.WriteLine(userCode + "\t: Delete a User");
+			}
+
 			// 로그인 코드를 초기화
 			isLogin = false;
 			userCode = null;
@@ -347,87 +357,80 @@ namespace ServerSystem
 		// 로그인 메소드
 		private bool Login(ReceiveResult result)
 		{
-            var login = result.Value as LoginProtocol.LOGIN;
+			var login = result.Value as LoginProtocol.LOGIN;
 
 			if (login == null)
 			{
-                return false;
+				Console.WriteLine("no Data");
+				return false;
 			}
 
 			Console.WriteLine(userCode + ": Logging in...");
 			Console.WriteLine(userCode + ": ID \"" + login.id + "\" has been attempted.");
 
-			// !SQL 로그인 시도
-			// SQL 객체 생성
-			SQL sql = new();
-
 			// UserParm 객체 생성
-			UserParm userParm = new UserParm();
+			UserParm userParm = new UserParm() { id = login.id, pwd = login.pw };
 
 			// UserParm 값 할당
-			userParm.id = login.id;
-			userParm.pwd = login.pw;
+			// userParm.id = login.id;
+			// userParm.pwd = login.pw;
 
 			// 로그인 결과 받아올 DataTable 객체 생성
-			DataTable queryResult = new DataTable();
+			//DataTable queryResult = new DataTable();
 
 			// 로그인 query 실행
-            queryResult = sql.resultConnectDB((object)userParm,"Login");
+			// queryResult = sql.resultConnectDB((object)userParm,"Login");
 
-			Console.WriteLine(queryResult.Rows[0][0]);
+			queryResult = sql.resultConnectDB(userParm, "Login");
+
+			Console.WriteLine("DB Result\t: " + queryResult.Rows[0][0]);
 
 			// 로그인 성공 시 작동할 부분
 			if (queryResult.Rows[0][0] is true)
 			{
-				Console.WriteLine("here");
-				// 로그인 컨테이너 정보를 가져옴
-				var container = LoginContainer.Instance;
+				// 프로토콜 객체 생성
+				LoginUserProtocol.LOGINUSER loginUser = new();
 
 				// 로그인 이전 이벤트를 끊는다.
 				BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
 
-                // 유저의 데이터를 전송 가능한 형태로 집어 넣는다.
-                LoginUserProtocol.LOGINUSER user = new LoginUserProtocol.LOGINUSER();
+				// 유저의 데이터를 전송 가능한 형태로 집어 넣는다.
+				//LoginUserProtocol.LOGINUSER user = new LoginUserProtocol.LOGINUSER();
 
 				// 유저 코드 가져오는 query 실행 및 유저 코드 할당
-                queryResult = sql.resultConnectDB((object)userParm, "GetUserCode");
-				user.userCode = Convert.ToInt32(queryResult.Rows[0]["U_code"]);
+				queryResult = sql.resultConnectDB((object)userParm, "GetUserCode");
 
-				//user.userCode = 10;
-				
+				// 로그인 정보 삽입
+				isLogin = true;
+				this.userCode = Convert.ToInt32(queryResult.Rows[0]["U_code"]);
+
+				// 로그인 컨테이너 등록
+				LoginContainer.Instance.RegistUser((int)userCode, this);
+
 				// 유저 정보 가져기 위해서 UserParm 값 할당
 				userParm.dataFormat = null;
 
 				// 유저 정보 가져오는 query 실행
 				queryResult = sql.resultConnectDB((object)userParm, "GetUser");
 
-				// 유저 정보 할당
-				user.name = queryResult.Rows[0]["U_name"].ToString();
-				user.nickname = queryResult.Rows[0]["U_nick"].ToString();
-				user.email = queryResult.Rows[0]["U_email"].ToString();
-				user.phone = queryResult.Rows[0]["U_phone"].ToString();
-				//LoginUserProtocol.LOGINUSER(10, "admin", "poro", "angus99@naver.com", "010-8355-3460");
-
-				Console.WriteLine($"{user.name}, {user.nickname}, {user.email}, {user.phone}");
-
-				// 로그인 정보 삽입
-				userCode = user.userCode;
-				isLogin = true;
-
-				// 로그인 컨테이너에 유저 정보 등록
-				container.RegistUser((int)userCode, this);
+				// 보낼 정보 세팅
+				loginUser.Set(
+					(int)this.userCode,
+					"id",
+					queryResult.Rows[0]["U_name"].ToString(),
+					queryResult.Rows[0]["U_email"].ToString(),
+					queryResult.Rows[0]["U_email"].ToString(),
+					queryResult.Rows[0]["U_phone"].ToString(), 
+					"context",
+					DateTime.Now);
 
 				// 유저에게 정보 전송
-				Send(Generater.Generate(user));
-				Console.WriteLine(userCode + ": Login succeeded.");
-
-				// 클라이언트 프로그램 실행에 필요한 데이터를 전부 쏴준다.
-				BaseDataSend();
-
+				Console.WriteLine(userCode + " Login Data Sending");
+				Send(Generater.Generate(loginUser));
 				return true;
 			}
 
-			return true;
+			return false;
 		}
 
 		// 로그아웃 메소드
@@ -488,8 +491,8 @@ namespace ServerSystem
 			// SQL 객체 생성
 			SQL sql = new();
 
-            // UserParm 객체 생성
-            UserParm userParm = new UserParm();
+			// UserParm 객체 생성
+			UserParm userParm = new UserParm();
 
 			// UserParm 객체 값 할당
 			userParm.id = siginUp.id;

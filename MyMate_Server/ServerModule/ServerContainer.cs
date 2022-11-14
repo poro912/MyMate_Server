@@ -38,7 +38,7 @@ namespace ServerSystem
 
 		public void ServerCreate(int userCode, string title)
 		{
-			Console.WriteLine(userCode + ": Create new Server");
+			Console.WriteLine(userCode + "\t: Create new Server");
 
 
 			// !SQL 서버 생성 후 서버코드 반환
@@ -61,13 +61,13 @@ namespace ServerSystem
 			// !Protocol 서버 생성 결과 전송
 
 			// server.serverCode = ;
-			// Console.WriteLine(": Fail to Create new Server");
+			// Console.WriteLine("\t: Fail to Create new Server");
 
 			
 			UserServer server = new(userCode, serverCode, "temp");
 
 			serverDict.Add(server.serverCode, server);
-			Console.WriteLine(server.serverCode + ": Complite to Create new Server");
+			Console.WriteLine(server.serverCode + "\t: Complite to Create new Server");
 
 			// 유저의 데이터를 넣는다.
 			server.EnterUser(userCode);
@@ -107,8 +107,8 @@ namespace ServerSystem
 		// DB에서 서버를 로드함 (Server 최초 실행시)
 		private void LoadServer()
 		{
-			Console.WriteLine(": All Server Load to DB");
-			
+			Console.WriteLine("Attempt\t: Load All Server Information to DB");
+
 			// !SQL 서버목록들을 불러온다.
 			/*
 			foreach(var server in servers )
@@ -130,6 +130,7 @@ namespace ServerSystem
 
 			}
 			*/
+			Console.WriteLine("Complite\t: Load All Server Information\n");
 		}
 	}
 
@@ -393,7 +394,7 @@ namespace ServerSystem
 		{
 
 
-			Console.WriteLine(userCode + " : MessageSending");
+			Console.WriteLine(userCode + "\t: MessageSending");
 			foreach(var user in enterUserList)
 			{
 				// userContainer를 참조하여 전부 보내줌
