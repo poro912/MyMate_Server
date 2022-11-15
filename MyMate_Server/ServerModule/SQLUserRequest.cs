@@ -57,7 +57,7 @@ namespace ServerSystem
 			// user에 대해 모든 사람의 정보를 전송
 			if(0 == userCode)
 			{
-				userParm.userCode = userCode;	// 모든 유저
+				userParm.userCode = 0;	// 모든 유저
                 userParm.dataFormat = null;
 
                 queryResult = sql.resultConnectDB(userParm, queryList.GetUser);
@@ -349,33 +349,6 @@ namespace ServerSystem
 
 			ChannelProtocol.CHNNEL channel = new();
 
-
-			// 여기 문제 있을 것 같음
-			if (serverCode == 0)
-			{
-                // 접속되어있는 모든 서버의 모든 채널에 대한 정보 전송
-
-				// server_user 테이블에서 서버 번호 가져온 후 채널 정보 가져오기 또는 조인테이블 작성
-                
-				// SQL 서버 채널 정보 전송
-                channelParm.serverCode = serverCode;
-                channelParm.channelCode = 0;
-
-                queryResult = sql.resultConnectDB(channelParm, queryList.GetChannel);
-
-				for (int i = 0; i < queryResult.Rows.Count; i++)
-				{
-
-					channel.Set(Convert.ToInt32(queryResult.Rows[i]["s_code"]),
-                        Convert.ToInt32(queryResult.Rows[i]["ch_code"]),
-                        queryResult.Rows[i]["title"].ToString(),
-                        Convert.ToInt32(queryResult.Rows[i]["state"])
-                        );
-					user.Send(Generater.Generate(channel));
-				}
-			}
-			else
-			{
                 // SQL 서버 채널 정보 전송
                 channelParm.serverCode = serverCode;
                 channelParm.channelCode = 0;	// 채널 코드 없음
@@ -389,8 +362,6 @@ namespace ServerSystem
                         );
 
                 user.Send(Generater.Generate(channel));
-
-			}
 
             return true;
 		}
