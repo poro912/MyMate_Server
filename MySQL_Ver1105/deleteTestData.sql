@@ -1,0 +1,12 @@
+delete from u_checklist_tb;
+delete from u_calendar_tb;
+delete from u_channel_tb;
+delete from friend_tb;
+delete from msg_tb;
+delete from checklist_tb;
+delete from calendar_tb;
+delete from channel_tb;
+delete from server_user_tb;
+delete from server_tb;
+delete from user_tb;
+update seq_table set seq_code = 0; 

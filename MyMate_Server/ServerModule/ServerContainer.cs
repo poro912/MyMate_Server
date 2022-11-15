@@ -59,9 +59,9 @@ namespace ServerSystem
 			serverParm.adminCode = userCode;
 			serverParm.isSingle = Convert.ToInt32(isSingle);
 
-			queryResult = new DataTable();
+			queryResult = new();
 
-            queryResult = sql.resultConnectDB((object)serverParm, "AddServer");
+            queryResult = sql.resultConnectDB(serverParm, queryList.AddServer);
 
 			serverCode = Convert.ToInt32(queryResult.Rows[0][0]);
 			
@@ -95,13 +95,13 @@ namespace ServerSystem
 			// !SQL 서버 삭제 
 			SQL sql = new();
 
-			ServerParm serverParm = new ServerParm();
+			ServerParm serverParm = new();
 
 			serverParm.serverCode = serverCode;
 			serverParm.adminCode = userCode;
 
 			// 서버 is_deleted 속성 true로 변경
-			sql.noResultConnectDB((object)serverParm, "RemoveServer");
+			sql.noResultConnectDB(serverParm, queryList.RemoveServer);
 
 			// !Protocol Toast userCode에게 삭제 메시지 전송
 		}
@@ -117,8 +117,20 @@ namespace ServerSystem
 		{
 			Console.WriteLine("Attempt\t: Load All Server Information to DB");
 
-			// !SQL 서버목록들을 불러온다.
-			/*
+            // !SQL 서버목록들을 불러온다.
+            SQL sql = new();
+
+            ServerParm serverParm = new();
+
+			DataTable queryResult = new();
+
+			serverParm.serverCode = 0;
+
+			queryResult = sql.resultConnectDB(serverParm, queryList.GetServer);
+
+			//가져온 서버 추가해야함
+
+            /*
 			foreach(var server in servers )
 			{
 				UserServer temp_server = new(server.Code,server.Title);
@@ -138,7 +150,7 @@ namespace ServerSystem
 
 			}
 			*/
-			Console.WriteLine("Complite\t: Load All Server Information\n");
+            Console.WriteLine("Complite\t: Load All Server Information\n");
 		}
 	}
 

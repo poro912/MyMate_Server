@@ -107,7 +107,7 @@ namespace ServerSystem
 
 			UserChannelParm userChannelParm = new();
 
-			ChannelProtocol.CHNNEL channel = new();
+			ChannelProtocol.CHANNEL channel = new();
 
 			DataTable queryResult = new();
 
@@ -351,7 +351,7 @@ namespace ServerSystem
 
                 // SQL 서버 채널 정보 전송
                 channelParm.serverCode = serverCode;
-                channelParm.channelCode = 0;	// 채널 코드 없음
+                channelParm.channelCode = 0;
 
                 queryResult = sql.resultConnectDB(channelParm, queryList.GetChannel);
 
