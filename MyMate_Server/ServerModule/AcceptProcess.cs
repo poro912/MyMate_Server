@@ -16,12 +16,13 @@ namespace ServerSystem
 	{
 		static public void AccpetRun(Client client)
 		{
-			Console.WriteLine("포트 번호 : " + client.socket.RemoteEndPoint);
+			Console.WriteLine("Attempt\t: 클라이언트 접근");
+			Console.WriteLine("포트 번호 : {} \n", client.socket.RemoteEndPoint);
+			
 			//BeforeLogin beforeclient = new(client);
 
 			// 큐에 삽입
 			//BeforeContainer.Instance.Push(beforeclient);
-			Console.WriteLine("Clinet 생성");
 			new UserClient(client.tcpClient);
 		}
 	}

@@ -49,7 +49,6 @@ namespace ServerSystem
 			{
 				loginDict.TryGetValue(userCode, out UserClient? temp);
 				
-
 				// 기존에 사용하던 소켓을 닫아버림
 				if (temp != null)
 				{
@@ -72,18 +71,20 @@ namespace ServerSystem
 		public void EraseUser(int userCode, UserClient target)
 		{
 			// 현재 메소드 이름 출력
-			Console.WriteLine(System.Reflection.MethodBase.GetCurrentMethod().Name);
+			// Console.WriteLine(System.Reflection.MethodBase.GetCurrentMethod().Name);
+			Console.WriteLine("Attempt\t: Delete a User from Login Dictionary");
 			loginDict.TryGetValue(userCode, out UserClient? temp);
+
 
 			// 서로 같은 객체라면 삭제한다.
 			if(target == temp)
 			{
 				loginDict.Remove(userCode);
-				Console.WriteLine("같은객체를 확인 dictionary에서 삭제합니다.\n");
+				Console.WriteLine("Complite\t: 같은객체임을 확인 삭제.\n");
 			}
 			else
 			{
-				Console.WriteLine("서로 다른 객체 삭제 불가\n");
+				Console.WriteLine("Fail\t: 서로 다른 객체 삭제 불가\n");
 			}
 		}
 
@@ -110,13 +111,11 @@ namespace ServerSystem
 		// 유저의 SendQueue에 데이터를 넣어준다.
 		public void Send(int userCode, List<byte> target)
 		{
-			
 			if(GetUser(userCode, out UserClient? user))
 			{
 				if(null != user)
 					user.Send(target);
 			}
 		}
-		// 삭제 요청이 들어온 경우 서로 똑같은 객체라면 삭제
 	}
 }
