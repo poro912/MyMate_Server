@@ -255,6 +255,7 @@ namespace ServerSystem
 						Convert.ToInt32(queryResult.Rows[0]["chk_code"]),
 						0,
 						Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
+						userCode,
 						new DateTime(Convert.ToInt32(queryResult.Rows[0]["start_time"])),
 						new DateTime(Convert.ToInt32(queryResult.Rows[0]["end_time"])),
 						queryResult.Rows[0]["content"].ToString(),
@@ -276,7 +277,8 @@ namespace ServerSystem
 						Convert.ToInt32(queryResult.Rows[0]["chk_code"]),
 						0,
 						Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
-						new DateTime(Convert.ToInt32(queryResult.Rows[0]["start_time"])),
+                        userCode,
+                        new DateTime(Convert.ToInt32(queryResult.Rows[0]["start_time"])),
 						new DateTime(Convert.ToInt32(queryResult.Rows[0]["end_time"])),
 						queryResult.Rows[0]["content"].ToString(),
 						Convert.ToBoolean(queryResult.Rows[0]["is_checked"]),
@@ -370,7 +372,7 @@ namespace ServerSystem
 
                 channel.Set(Convert.ToInt32(queryResult.Rows[0]["s_code"]),
                         Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
-                        queryResult.Rows[0]["title"].ToString(),
+                        queryResult.Rows[0]["ch_title"].ToString(),
                         Convert.ToInt32(queryResult.Rows[0]["state"])
                         );
 
@@ -478,6 +480,7 @@ namespace ServerSystem
 					checklist.Set(Convert.ToInt32(queryResult.Rows[i]["chk_code"]),
                         Convert.ToInt32(queryResult.Rows[i]["s_code"]),
                         Convert.ToInt32(queryResult.Rows[i]["ch_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["creater"]),
                         new DateTime(Convert.ToInt32(queryResult.Rows[i]["start_time"])),
                         new DateTime(Convert.ToInt32(queryResult.Rows[i]["end_time"])),
                         queryResult.Rows[i]["content"].ToString(),
@@ -504,6 +507,7 @@ namespace ServerSystem
                 checklist.Set(Convert.ToInt32(queryResult.Rows[0]["chk_code"]),
                          Convert.ToInt32(queryResult.Rows[0]["s_code"]),
                          Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
+                         Convert.ToInt32(queryResult.Rows[0]["creater"]),
                          new DateTime(Convert.ToInt32(queryResult.Rows[0]["start_time"])),
                          new DateTime(Convert.ToInt32(queryResult.Rows[0]["end_time"])),
                          queryResult.Rows[0]["content"].ToString(),
