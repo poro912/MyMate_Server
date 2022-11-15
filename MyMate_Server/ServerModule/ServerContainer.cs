@@ -7,6 +7,7 @@ using MyMate_DB_Module;
 using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
 using ServerToClient;
 using Convert = System.Convert;
+using queryList = MyMate_DB_Module.QueryString;
 using System.Data;
 using System.Globalization;
 

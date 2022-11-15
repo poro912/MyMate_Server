@@ -11,6 +11,7 @@ using ServerToClient;
 using static Protocol.LogoutProtocol;
 using static Protocol.SignUpProtocol;
 using Convert = System.Convert;
+using queryList = MyMate_DB_Module.QueryString;
 using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
 
 namespace ServerSystem
@@ -38,7 +39,7 @@ namespace ServerSystem
 		// 결과값을 임시로 저장하는 객체 변수
 		private ReceiveResult result;
 		// SQL에 접근하기 위한 객체
-		private SQL? sql;
+		private SQL? sql = new();
 		private DataTable? queryResult;
 
 		public UserClient(TcpClient tcpClient) :
@@ -425,12 +426,12 @@ namespace ServerSystem
 			// 로그인 query 실행
 			// queryResult = sql.resultConnectDB((object)userParm,"Login");
 
-			queryResult = sql.resultConnectDB(userParm, "Login");
+			queryResult = sql.resultConnectDB(userParm, queryList.Login);
 
 			Console.WriteLine("DB Result\t: " + queryResult.Rows[0][0]);
 
 			// 로그인 성공 시 작동할 부분
-			if (queryResult.Rows[0][0] is true)
+			if (Convert.ToBoolean(queryResult.Rows[0][0]) is true)
 			{
 				// 프로토콜 객체 생성
 				LoginUserProtocol.LOGINUSER loginUser = new();
@@ -442,30 +443,31 @@ namespace ServerSystem
 				//LoginUserProtocol.LOGINUSER user = new LoginUserProtocol.LOGINUSER();
 
 				// 유저 코드 가져오는 query 실행 및 유저 코드 할당
-				queryResult = sql.resultConnectDB((object)userParm, "GetUserCode");
+				queryResult = sql.resultConnectDB((object)userParm, queryList.GetUserCode);
 
 				// 로그인 정보 삽입
 				isLogin = true;
 				this.userCode = Convert.ToInt32(queryResult.Rows[0]["U_code"]);
+				userParm.userCode = Convert.ToInt32(queryResult.Rows[0]["U_code"]);
 
-				// 로그인 컨테이너 등록
-				LoginContainer.Instance.RegistUser((int)userCode, this);
+                // 로그인 컨테이너 등록
+                LoginContainer.Instance.RegistUser((int)userCode, this);
 
 				// 유저 정보 가져기 위해서 UserParm 값 할당
 				userParm.dataFormat = null;
 
 				// 유저 정보 가져오는 query 실행
-				queryResult = sql.resultConnectDB((object)userParm, "GetUser");
+				queryResult = sql.resultConnectDB((object)userParm, queryList.GetUser);
 
-				// 보낼 정보 세팅
-				loginUser.Set(
+                // id, nick, name, phone, email, content, is_deleted
+                // 보낼 정보 세팅
+                loginUser.Set(
 					(int)this.userCode,
-					"id",
 					queryResult.Rows[0]["U_name"].ToString(),
-					queryResult.Rows[0]["U_email"].ToString(),
-					queryResult.Rows[0]["U_email"].ToString(),
-					queryResult.Rows[0]["U_phone"].ToString(), 
-					"context",
+                    queryResult.Rows[0]["U_nick"].ToString(),
+                    queryResult.Rows[0]["U_email"].ToString(),
+					queryResult.Rows[0]["U_phone"].ToString(),
+					queryResult.Rows[0]["U_content"].ToString(), 
 					DateTime.Now);
 
 				// 유저에게 정보 전송
@@ -531,9 +533,9 @@ namespace ServerSystem
 			userParm.phone = siginUp.phone;
 
 			// 유효성 검사에 성공했다면
-			if (sql.checkValue((object)userParm))
+			if (sql.checkValue(userParm))
 			{
-				if (sql.noResultConnectDB((object)userParm, "Signin")) // (SQL.SIGNUP())
+				if (sql.noResultConnectDB(userParm, queryList.Signin)) // (SQL.SIGNUP())
 				{
 					// 결과를 토스트메시지로 전송
 					Send(Generater.Generate(new ToastProtocol.TOAST(0, "회원가입", "회원가입에 성공했습니다.\nid : "+siginUp.id)));

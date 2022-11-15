@@ -11,6 +11,7 @@ using static Protocol.ToastProtocol;
 using MyMate_DB_Module;
 using System.Data;
 using Convert = System.Convert;
+using queryList = MyMate_DB_Module.QueryString;    
 using Protocol;
 using System.Globalization;
 using static Protocol.CheckListProtocol;
@@ -29,7 +30,7 @@ namespace ServerSystem
 			// SQL 객체 생성
 			SQL sql = new();
 
-            UserParm userParm = new UserParm();
+            UserParm userParm = new();
 
             DataTable queryResult = new();
 
@@ -41,11 +42,10 @@ namespace ServerSystem
 				userParm.userCode = userCode;
 				userParm.dataFormat = null;
 
-				queryResult = sql.resultConnectDB((object)userParm, "GetUser");
+				queryResult = sql.resultConnectDB(userParm, queryList.GetUser);
 
 				userProfile.Set(
 					userCode,
-					"",
 					queryResult.Rows[0]["U_name"].ToString(),
 					queryResult.Rows[0]["U_nick"].ToString(),
 					queryResult.Rows[0]["U_email"].ToString(),
@@ -58,13 +58,14 @@ namespace ServerSystem
 			if(0 == userCode)
 			{
 				userParm.userCode = userCode;
+                userParm.dataFormat = null;
 
+                queryResult = sql.resultConnectDB(userParm, queryList.GetUser);
 
-				for(int i = 0; i < 10; i++)
+                for (int i = 0; i < queryResult.Rows.Count; i++)
 				{
 					userProfile.Set(
 					userCode,
-					"",
 					queryResult.Rows[i]["U_name"].ToString(),
 					queryResult.Rows[i]["U_nick"].ToString(),
 					queryResult.Rows[i]["U_email"].ToString(),
@@ -81,11 +82,10 @@ namespace ServerSystem
 				userParm.userCode = userCode;
 				userParm.dataFormat = null;
 
-				queryResult = sql.resultConnectDB((object)userParm, "GetUser");
+				queryResult = sql.resultConnectDB(userParm, queryList.GetUser);
 
 				userProfile.Set(
 					userCode,
-					"",
 					queryResult.Rows[0]["U_name"].ToString(),
 					queryResult.Rows[0]["U_nick"].ToString(),
 					queryResult.Rows[0]["U_email"].ToString(),
@@ -105,26 +105,27 @@ namespace ServerSystem
 			// !SQL userChnnel에 대한 정보를 받아옴
 			SQL sql = new();
 
-			UserChannelParm userChannelParm = new UserChannelParm();
+			UserChannelParm userChannelParm = new();
 
-			ChannelProtocol.CHANNEL channel = new();
+			ChannelProtocol.CHNNEL channel = new();
 
-			userChannelParm.userCode = userCode;
-
-			DataTable queryResult = new DataTable();
+			DataTable queryResult = new();
 
 			// 모든 채널 정보 전송
 			if (0 == ChannelCode)
 			{
-				for (int i = 0; i < 10; i++)
-				{
-					
+                userChannelParm.userCode = userCode;
+                userChannelParm.channelCode = 0;
 
+                queryResult = sql.resultConnectDB(userChannelParm, queryList.GetUserChannel);
+
+                for (int i = 0; i < queryResult.Rows.Count; i++)
+				{
 					channel.Set(
-						Convert.ToInt32(queryResult.Rows[0]["s_code"]),
-						Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
-						queryResult.Rows[0]["ch_title"].ToString(),
-						Convert.ToInt32(queryResult.Rows[0]["state"]));
+						Convert.ToInt32(queryResult.Rows[i]["s_code"]),
+						Convert.ToInt32(queryResult.Rows[i]["ch_code"]),
+						queryResult.Rows[i]["ch_title"].ToString(),
+						Convert.ToInt32(queryResult.Rows[i]["state"]));
 					user.Send(Generater.Generate(channel));
 				}
 				return true;
@@ -132,14 +133,16 @@ namespace ServerSystem
 			// 한 채널 정보 전송
 			else
 			{
-				queryResult = sql.resultConnectDB((object)userChannelParm, "GetUserChannel");
+                userChannelParm.userCode = userCode;
+                userChannelParm.channelCode = ChannelCode;
+
+                queryResult = sql.resultConnectDB(userChannelParm, queryList.GetUserChannel);
 
 				channel.Set(
 					Convert.ToInt32(queryResult.Rows[0]["s_code"]),
 					Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
 					queryResult.Rows[0]["ch_title"].ToString(),
 					Convert.ToInt32(queryResult.Rows[0]["state"]));
-
 				user.Send(Generater.Generate(channel));
 				return true;
 			}
@@ -156,10 +159,10 @@ namespace ServerSystem
 			SQL sql = new();
 
 			// userCalendarParm 객체 생성
-			UserCalendarParm userCalendarParm = new UserCalendarParm();
+			UserCalendarParm userCalendarParm = new();
 
 			// query결과 값 할당할 dataTable 객체 생성
-			DataTable queryResult = new DataTable();
+			DataTable queryResult = new ();
 
 			// 결과 값을 할당할 calendar 객체 생성
 			CalenderProtocol.CALENDER calendar = new();
@@ -169,14 +172,13 @@ namespace ServerSystem
 			if (channel == 0)
 			{
                 
-
 				// 값 할당
                 userCalendarParm.userCode = userCode;
-                userCalendarParm.channelCode = null;
-				userCalendarParm.calendarCode = null;
+                userCalendarParm.channelCode = 0;
+				userCalendarParm.calendarCode = 0;
 
 				// query 실행
-				queryResult = sql.resultConnectDB((object)userCalendarParm, "GetUserCalendar");
+				queryResult = sql.resultConnectDB(userCalendarParm, queryList.GetUserCalendar);
 
 
 				// 결과 값 할당
@@ -189,8 +191,8 @@ namespace ServerSystem
 						Convert.ToInt32(queryResult.Rows[0]["cal_code"]),
 						queryResult.Rows[0]["content"].ToString(),
 						userCode,
-						DateTime.Now.AddDays(-2),
-						DateTime.Now.AddDays(2),
+						new DateTime(Convert.ToInt32(queryResult.Rows[0]["start_time"])),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[0]["end_time"])),
 						Convert.ToBoolean(queryResult.Rows[0]["is_private"]));
 					user.Send(Generater.Generate(calendar));
 				}
@@ -201,21 +203,21 @@ namespace ServerSystem
                 // 값 할당
                 userCalendarParm.userCode = userCode;
                 userCalendarParm.channelCode = channel;
-                userCalendarParm.calendarCode = null;
+                userCalendarParm.calendarCode = 0;
 
                 // query 실행
-                queryResult = sql.resultConnectDB((object)userCalendarParm, "GetUserCalendar");
+                queryResult = sql.resultConnectDB((object)userCalendarParm, queryList.GetUserCalendar);
 
 
                 // 결과 값 할당
 				calendar.Set(0, channel,
-						Convert.ToInt32(queryResult.Rows[0]["cal_code"]),
-						queryResult.Rows[0]["content"].ToString(),
-						userCode,
-						DateTime.Now.AddDays(-2),
-						DateTime.Now.AddDays(2),
-						Convert.ToBoolean(queryResult.Rows[0]["is_private"]));
-				user.Send(Generater.Generate(calendar));
+                        Convert.ToInt32(queryResult.Rows[0]["cal_code"]),
+                        queryResult.Rows[0]["content"].ToString(),
+                        userCode,
+                        new DateTime(Convert.ToInt32(queryResult.Rows[0]["start_time"])),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[0]["end_time"])),
+                        Convert.ToBoolean(queryResult.Rows[0]["is_private"]));
+                user.Send(Generater.Generate(calendar));
 			}
 			return true;
 		}
@@ -229,7 +231,7 @@ namespace ServerSystem
 
 			UserChecklistParm userChecklistParm = new();
 
-			DataTable queryResult = new DataTable();
+			DataTable queryResult = new();
 
 			CheckListProtocol.CHECKLIST checklist = new();
 
@@ -237,12 +239,12 @@ namespace ServerSystem
 			{
                 // 모든 데이터 전송 
                 userChecklistParm.userCode = userCode;
-                userChecklistParm.channelCode = null;
-				userChecklistParm.checklistCode = null;
+                userChecklistParm.channelCode = 0;
+				userChecklistParm.checklistCode = 0;
 
-                queryResult = sql.resultConnectDB((object)userChecklistParm, "GetUserChecklist");
+                queryResult = sql.resultConnectDB(userChecklistParm, queryList.GetUserChecklist);
 
-				for (int i = 0; i < 10; i++)
+				for (int i = 0; i < queryResult.Rows.Count; i++)
 				{
 
 
@@ -263,9 +265,9 @@ namespace ServerSystem
 
                 userChecklistParm.userCode = userCode;
                 userChecklistParm.channelCode = channel;
-                userChecklistParm.checklistCode = null;
+                userChecklistParm.checklistCode = 0;
 
-                queryResult = sql.resultConnectDB((object)userChecklistParm, "GetUserChecklist");
+                queryResult = sql.resultConnectDB(userChecklistParm, queryList.GetUserChecklist);
 
 				for (int i = 0; i < 10; i++)
 				{
@@ -305,18 +307,19 @@ namespace ServerSystem
 				// !SQL 접속되어 있는 모든 서버에 대한 정보 전송
                 // 접속되어있는 모든 서버에 대한 정보 전송
 
-                // 리스트 사용할 경우 필요 없어짐
-
-                serverUserParm.serverCode = null;
+                serverUserParm.serverCode = 0;
                 serverUserParm.userCode = userCode;
 
-                queryResult = sql.resultConnectDB((object)serverUserParm, "GetServeruser");
-				for (int i = 0; i < 10; i++)
+                queryResult = sql.resultConnectDB(serverUserParm, queryList.GetServeruser);
+
+				for (int i = 0; i < queryResult.Rows.Count; i++)
 				{
 
 
-					server.Set(0, "", 0, false
-						);
+					server.Set(Convert.ToInt32(queryResult.Rows[i]["s_code"]),
+                        queryResult.Rows[i]["s_code"].ToString(),
+						0
+						);	
 					user.Send(Generater.Generate(server));
 				}
 
@@ -328,11 +331,13 @@ namespace ServerSystem
                 serverUserParm.serverCode = serverCode;
                 serverUserParm.userCode = userCode;
 
-                queryResult = sql.resultConnectDB((object)serverUserParm, "GetServeruser");
+                queryResult = sql.resultConnectDB(serverUserParm,queryList.GetServeruser);
 
-				server.Set(0, "", 0, false
-						);
-				user.Send(Generater.Generate(server));
+                server.Set(Convert.ToInt32(queryResult.Rows[0]["s_code"]),
+                        queryResult.Rows[0]["s_code"].ToString(),
+                        0
+                        );
+                user.Send(Generater.Generate(server));
 			}
             return true;
 		}
@@ -343,12 +348,14 @@ namespace ServerSystem
 
 			SQL sql = new();
 
-			ChannelParm channelParm = new ChannelParm();
+			ChannelParm channelParm = new();
 
-			DataTable queryResult = new DataTable();
+			DataTable queryResult = new();
 
-			ChannelProtocol.CHANNEL channel = new ();
+			ChannelProtocol.CHNNEL channel = new();
 
+
+			// 여기 문제 있을 것 같음
 			if (serverCode == 0)
 			{
                 // 접속되어있는 모든 서버의 모든 채널에 대한 정보 전송
@@ -357,22 +364,37 @@ namespace ServerSystem
                 
 				// SQL 서버 채널 정보 전송
                 channelParm.serverCode = serverCode;
-                channelParm.channelCode = null;
+                channelParm.channelCode = 0;
 
-                queryResult = sql.resultConnectDB((object)channelParm, "GetChannel");
+                queryResult = sql.resultConnectDB(channelParm, queryList.GetChannel);
 
-				for (int i = 0; i < 10; i++)
+				for (int i = 0; i < queryResult.Rows.Count; i++)
 				{
+
+					channel.Set(Convert.ToInt32(queryResult.Rows[i]["s_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["ch_code"]),
+                        queryResult.Rows[i]["title"].ToString(),
+                        Convert.ToInt32(queryResult.Rows[i]["state"])
+                        );
 					user.Send(Generater.Generate(channel));
 				}
 			}
 			else
 			{
-				// SQL 서버 채널 정보 전송
-				for (int i = 0; i < 10; i++)
-				{
-					user.Send(Generater.Generate(channel));
-				}
+                // SQL 서버 채널 정보 전송
+                channelParm.serverCode = serverCode;
+                channelParm.channelCode = 0;
+
+                queryResult = sql.resultConnectDB(channelParm, queryList.GetChannel);
+
+                channel.Set(Convert.ToInt32(queryResult.Rows[0]["s_code"]),
+                        Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
+                        queryResult.Rows[0]["title"].ToString(),
+                        Convert.ToInt32(queryResult.Rows[0]["state"])
+                        );
+
+                user.Send(Generater.Generate(channel));
+
 			}
 
             return true;
@@ -385,43 +407,61 @@ namespace ServerSystem
 			// !SQL 서버의 캘린더 정보를 받아옴
 			SQL sql = new();
 
-			CalendarParm calendarParm = new CalendarParm();
+			CalendarParm calendarParm = new();
 
-			DataTable queryResult = new DataTable();
+			DataTable queryResult = new();
 
-			CalenderProtocol.CALENDER calendar = new ();
+			CalenderProtocol.CALENDER calendar = new();
 
-			calendarParm.serverCode = serverCode;
-			calendarParm.channelCode = channel;
-			calendarParm.calendarCode = null;
-
-			queryResult = sql.resultConnectDB((object)calendarParm, "GetCalendar");
+			
 
 			if (channel == 0)
 			{
-				// 해당 서버의 모든 캘린더 데이터 전송
-				// !SQL 
-				for (int i = 0; i < 10; i++)
+                calendarParm.serverCode = serverCode;
+                calendarParm.channelCode = 0;
+                calendarParm.calendarCode = 0;
+
+                queryResult = sql.resultConnectDB(calendarParm, queryList.GetCalendar);
+
+                // 해당 서버의 모든 캘린더 데이터 전송
+                // !SQL 
+                for (int i = 0; i < queryResult.Rows.Count; i++)
 				{
 
 
-					calendar.Set(0, 0, 0, "", 0, DateTime.Now, DateTime.Now, false
-						);
+					calendar.Set(Convert.ToInt32(queryResult.Rows[i]["s_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["ch_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["cal_code"]),
+                        queryResult.Rows[i]["content"].ToString(),
+                        Convert.ToInt32(queryResult.Rows[i]["creater"]),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[i]["start_time"])),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[i]["end_time"])),
+                        Convert.ToBoolean(queryResult.Rows[i]["is_private"])
+                        );
 					user.Send(Generater.Generate(calendar));
 				}
 			}
 			else
 			{
-				// 해당 서버 한 채널의 코든 캘린더 데이터 전송
-				// !SQL
-				for (int i = 0; i < 10; i++)
-				{
+                // 해당 서버 한 채널의 코든 캘린더 데이터 전송
+                // !SQL
+                calendarParm.serverCode = serverCode;
+                calendarParm.channelCode = channel;
+                calendarParm.calendarCode = 0;
 
+                queryResult = sql.resultConnectDB(calendarParm, queryList.GetCalendar);
 
-					calendar.Set(0, 0, 0, "", 0, DateTime.Now, DateTime.Now, false
-						);
-					user.Send(Generater.Generate(calendar));
-				}
+                calendar.Set(Convert.ToInt32(queryResult.Rows[0]["s_code"]),
+                        Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
+                        Convert.ToInt32(queryResult.Rows[0]["cal_code"]),
+                        queryResult.Rows[0]["content"].ToString(),
+                        Convert.ToInt32(queryResult.Rows[0]["creater"]),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[0]["start_time"])),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[0]["end_time"])),
+                        Convert.ToBoolean(queryResult.Rows[0]["is_private"])
+                        );
+                    user.Send(Generater.Generate(calendar));
+
 			}
             
             
@@ -441,20 +481,30 @@ namespace ServerSystem
 
 			CheckListProtocol.CHECKLIST checklist = new();
 
-			checklistParm.serverCode = serverCode;
-            checklistParm.channelCode = channel;
-            checklistParm.checklistCode = null;
-
-			
-
-            queryResult = sql.resultConnectDB((object)checklistParm, "GetChecklist");
+		
 
             if (channel == 0)
 			{
-				// 모든 데이터 전송
-				for (int i = 0; i < 10; i++)
-				{
+                checklistParm.serverCode = serverCode;
+                checklistParm.channelCode = 0;
+                checklistParm.checklistCode = 0;
 
+
+
+                queryResult = sql.resultConnectDB(checklistParm, queryList.GetChecklist);
+
+                // 모든 데이터 전송
+                for (int i = 0; i < queryResult.Rows.Count; i++)
+				{
+					checklist.Set(Convert.ToInt32(queryResult.Rows[i]["chk_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["s_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["ch_code"]),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[i]["start_time"])),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[i]["end_time"])),
+                        queryResult.Rows[i]["content"].ToString(),
+                        Convert.ToBoolean(queryResult.Rows[i]["checked"]),
+                        Convert.ToBoolean(queryResult.Rows[i]["is_private"])
+                        );
 
 					// checklist.Set();
 					user.Send(Generater.Generate(channel));
@@ -462,14 +512,28 @@ namespace ServerSystem
 			}
 			else
 			{
-				// 대상 채널 정보 전송
-				for (int i = 0; i < 10; i++)
-				{
+                // 대상 채널 정보 전송
+                checklistParm.serverCode = serverCode;
+                checklistParm.channelCode = channel;
+                checklistParm.checklistCode = 0;
 
 
-					// checklist.Set();
-					user.Send(Generater.Generate(channel));
-				}
+
+                queryResult = sql.resultConnectDB(checklistParm, queryList.GetChecklist);
+
+
+                checklist.Set(Convert.ToInt32(queryResult.Rows[0]["chk_code"]),
+                         Convert.ToInt32(queryResult.Rows[0]["s_code"]),
+                         Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
+                         new DateTime(Convert.ToInt32(queryResult.Rows[0]["start_time"])),
+                         new DateTime(Convert.ToInt32(queryResult.Rows[0]["end_time"])),
+                         queryResult.Rows[0]["content"].ToString(),
+                         Convert.ToBoolean(queryResult.Rows[0]["checked"]),
+                         Convert.ToBoolean(queryResult.Rows[0]["is_private"])
+                         );
+
+                user.Send(Generater.Generate(channel));
+				
 			}
 			// !SQL 서버의 프로젝트 정보를 받아옴
 			/*
