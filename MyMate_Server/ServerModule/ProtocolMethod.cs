@@ -8,6 +8,9 @@ using System.Threading.Tasks;
 using ServerToClient;
 
 using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
+using MyMate_DB_Module;
+using System.Data;
+using static Protocol.UserProtocol;
 
 
 /*
@@ -30,9 +33,6 @@ using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
 				{DataType.CALENDER      , CalenderProtocol.Convert},
 				{DataType.FRIEND        , FriendProtocol.Convert},
 				{DataType.LOGINUSER     , UserInfoProtocol.Convert} 
-  
- 
- 
  */
 
 
@@ -50,12 +50,14 @@ namespace ServerSystem
 		// 서버에서 가져다 쓸 메소드
 		private static readonly Dictionary<byte, ProtocolMethod> methodDict = new()
 		{
-			{DataType.SERVER        , ProtocolMethods.PassToServer},	// 서버
-			{DataType.CHNNEL        , ProtocolMethods.DefaultMethod},	// 클라이언트, 서버
+			{DataType.USER			, ProtocolMethods.UserMethod},		// 클라이언트
+			{DataType.SERVER        , ProtocolMethods.ServerMethod},	// 서버
+			{DataType.CHNNEL        , ProtocolMethods.ChannelMethod},	// 클라이언트, 서버
 			{DataType.MESSAGE       , ProtocolMethods.MessageMethod},	// 서버
-			{DataType.CHECKLIST     , ProtocolMethods.DefaultMethod},	// 클라이언트, 서버
-			{DataType.CALENDER      , ProtocolMethods.DefaultMethod},	// 클라이언트, 서버
-			{DataType.FRIEND        , ProtocolMethods.DefaultMethod},   // 클라이언트
+			{DataType.CHECKLIST     , ProtocolMethods.ChecklistMethod},	// 클라이언트, 서버
+			{DataType.CALENDER      , ProtocolMethods.CalendarMethod},	// 클라이언트, 서버
+			{DataType.FRIEND        , ProtocolMethods.FriendMethod},   // 클라이언트
+			{DataType.INVITE		, ProtocolMethods.InviteMethod }
 			//{DataType.DELIVER		,ProtocolMethods.DefaultMethod}
 		};
 
@@ -81,24 +83,31 @@ namespace ServerSystem
 	// ㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡMethodsㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡㅡ
 	public static class ProtocolMethods
 	{
-		// 서버로 데이터를 넘겨준다.
-		
-		public static void PassToServer(int userCode, ReceiveResult result)
+		public static void UserMethod(int userCode, ReceiveResult result)
 		{
-			// 프로토콜 미확인시 확인 불가능
-			/*
-			MessageProtocol.MESSAGE? target = result.Value as MessageProtocol.MESSAGE;
+			UserProtocol.USER? target = result.Value as UserProtocol.USER;
+			Client? user;
+			Console.WriteLine(userCode + "\t: Modify User Infomation");
+
 			if (null == target)
 				return;
-			//target.serverCode;
-			UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
-			if (null == server)
+			if (target.userCode != userCode)
 				return;
-			// 비동기 실행
-			server.Process(userCode, result);
-			*/
-		}
 
+			// !SQL 유저데이터 변경
+			SQL sql = new();
+			DataTable? queryResult;
+
+			if(false)
+			{
+				Console.WriteLine(userCode + "\t: Failed to User Information Modify");
+			}
+			Console.WriteLine(userCode + "\t: Successed to User Information Modify");
+			// 바뀐값만 담아 전송
+			user = LoginContainer.Instance.GetUser(userCode);
+			if(user != null)
+				user.Send(Generater.Generate(new LoginUserProtocol.LOGINUSER(userCode)));
+		}
 
 		public static void ServerMethod(int userCode, ReceiveResult result)
 		{
@@ -106,16 +115,272 @@ namespace ServerSystem
 			ServerProtocol.Server? target = result.Value as ServerProtocol.Server;
 			if (null == target)
 				return;
-
+			
 			// 생성
-			if(target.serverCode == 0)
+			if (target.serverCode == 0)
 			{
+				Console.WriteLine(userCode + "\t: Create Server");
 				// create server 호출
-				ServerContainer.Instance.ServerCreate(userCode, target.title);
+				ServerContainer.Instance.ServerCreate(userCode, target.title, target.isSingle);
 
 				// !Protocol 서버 생성
 				return;
 			}
+
+			Console.WriteLine(userCode + "\t: Modify Server");
+			// 서버정보 수정
+			UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
+
+			// 해당하는 서버가 없다면 종료
+			if (null == server)
+				return;
+
+			server.ModifyServer(userCode, target);
+
+			// 비동기 실행
+			//server.Process(result);
+		}
+
+		public static void ChannelMethod(int userCode, ReceiveResult result)
+		{
+			Client? user;
+			ChannelProtocol.CHANNEL? target = result.Value as ChannelProtocol.CHANNEL;
+			if (null == target)
+				return;
+			
+			// 채널 생성
+			if (0 == target.channelCode)
+			{
+				// 개인 채널 생성
+				if (0 == target.serverCode)
+				{
+					Console.WriteLine(userCode + "\t: Create User Channel");
+					//ChannelType.Calender;
+					// !SQL 개인 채널 생성
+
+					target.channelCode = 10;
+
+					user = LoginContainer.Instance.GetUser(userCode);
+					if (user != null)
+						user.Send(Generater.Generate(target));
+				}
+				// 서버 채널 생성
+				else
+				{
+					Console.WriteLine(userCode + "\t: Create Server Channel");
+					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
+					if (null == server)
+						return;
+					server.CreateChannel(userCode, target);
+				}
+			}
+			// 변경
+			else
+			{
+				// 개인 채널 변경
+				if (0 == target.serverCode)
+				{
+					Console.WriteLine(userCode + "\t: Modify User Channel");
+					// !SQL 개인 채널 변경
+					user = LoginContainer.Instance.GetUser(userCode);
+					if (user != null)
+						user.Send(Generater.Generate(target));
+				}
+				// 서버 채널 변경
+				else
+				{
+					Console.WriteLine(userCode + "\t: Modify Server Channel");
+
+					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
+					if (null == server)
+						return;
+					server.ModifyChannel(userCode, target);
+				}
+			}
+		}
+
+		public static void MessageMethod(int userCode, ReceiveResult result)
+		{
+			// 메시지를 result에 등록된 서버에 전달한다.
+			MessageProtocol.MESSAGE? target = result.Value as MessageProtocol.MESSAGE;
+			Console.WriteLine(userCode + "\t: Message Send");
+
+			if (null == target)
+				return;
+
+			// 서버를 불러온다.
+			UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
+
+			// 서버가 없다면 종료
+			if (null == server)
+				return;
+
+			// 비동기 실행
+			server.Message(userCode, target);
+		}
+
+		public static void CalendarMethod(int userCode, ReceiveResult result)
+		{
+			Client? user;
+			CalenderProtocol.CALENDER? target = result.Value as CalenderProtocol.CALENDER;
+			if (null == target)
+				return;
+
+			// 캘린더(일정) 생성
+			if(0 == target.calenderCode)
+			{
+				// 개인 일정 생성
+				if (0 == target.serverCode)
+				{
+					Console.WriteLine(userCode + "\t: Create User Calendar");
+					// !SQL 개인 일정 생성
+
+					target.calenderCode = 10;
+
+					user = LoginContainer.Instance.GetUser(userCode);
+					if (user != null)
+						user.Send(Generater.Generate(target));
+				}
+				// 서버 일정 생성
+				else
+				{
+					Console.WriteLine(userCode + "\t: Create Server Calendar");
+					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
+					if (null == server)
+						return;
+					server.CreateCalendar(userCode, target);
+				}
+			}
+			// 변경
+			else
+			{
+				// 개인 일정 변경
+				if (0 == target.serverCode)
+				{
+					Console.WriteLine(userCode + "\t: Modify User Calendar");
+					// !SQL 개인 일정 변경
+
+					user = LoginContainer.Instance.GetUser(userCode);
+					if (user != null)
+						user.Send(Generater.Generate(target));
+				}
+				// 서버 일정 변경
+				else
+				{
+					Console.WriteLine(userCode + "\t: Modify Server Calendar");
+					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
+					if (null == server)
+						return;
+					server.ModifyCalendar(userCode, target);
+				}
+			}
+		}
+
+		public static void ChecklistMethod(int userCode, ReceiveResult result)
+		{
+			Client? user;
+			CheckListProtocol.CHECKLIST? target = result.Value as CheckListProtocol.CHECKLIST;
+			if (null == target)
+				return;
+
+			// 체크리스트 (체크리스트) 생성
+			if (0 == target.checkListCode)
+			{
+				// 개인 체크리스트 생성
+				if (0 == target.serverCode)
+				{
+					Console.WriteLine(userCode + "\t: Create User Checklist");
+					// !SQL 개인 체크리스트 생성
+
+					target.checkListCode = 10;
+
+					user = LoginContainer.Instance.GetUser(userCode);
+					if (user != null)
+						user.Send(Generater.Generate(target));
+				}
+				// 서버 체크리스트 생성
+				else
+				{
+					Console.WriteLine(userCode + "\t: Create Server Checklist");
+					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
+					if (null == server)
+						return;
+					server.CreateChecklist(userCode, target);
+				}
+			}
+			// 변경
+			else
+			{
+				// 개인 체크리스트 변경
+				if (0 == target.serverCode)
+				{
+					Console.WriteLine(userCode + "\t: Modify User Checklist");
+					// !SQL 개인 체크리스트 변경
+
+					user = LoginContainer.Instance.GetUser(userCode);
+					if (user != null)
+						user.Send(Generater.Generate(target));
+				}
+				// 서버 체크리스트 변경
+				else
+				{
+					Console.WriteLine(userCode + "\t: Modify Server Checklist");
+
+					UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
+					if (null == server)
+						return;
+					server.ModifyChecklist(userCode, target);
+				}
+			}
+		}
+
+		public static void FriendMethod(int userCode, ReceiveResult result)
+		{
+			FriendProtocol.FRIEND? target = result.Value as FriendProtocol.FRIEND;
+			Client? user;
+
+			Console.Write(".");
+
+			if (null == target)
+				return;
+			if (target.userCode != userCode)
+				return;
+
+			Console.WriteLine(userCode + "\t: Create or Modify friend\ttarget\t:" + target.friendId);
+
+			SQL sql = new();
+			DataTable? queryResult;
+
+			// !SQL 친구 데이터가 있는지 확인
+
+			// 데이터가 있다면
+			if(true)
+			{
+				// !SQL 친구 데이터 변경
+			}
+			else
+			{
+				// !SQL 친구 데이터 추가
+			}
+
+
+			// 바뀐값만 담아 전송
+			user = LoginContainer.Instance.GetUser(userCode);
+			if (user != null)
+				user.Send(Generater.Generate(target));
+		}
+
+		public static void InviteMethod(int userCode, ReceiveResult result)
+		{
+			InviteProtocol.Invite? target = result.Value as InviteProtocol.Invite;
+			Console.Write(".");
+
+			if (null == target)
+				return;
+			if (target.userCode != userCode)
+				return;
+
+			Console.WriteLine(userCode + "\t: Server Invite\tServer\t:" + target.serverCode);
 
 			// 서버정보 수정
 			UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
@@ -124,34 +389,12 @@ namespace ServerSystem
 			if (null == server)
 				return;
 
-
-			server.ModifyServer(userCode, target);
-
-			// 비동기 실행
-			//server.Process(result);
+			server.EnterUser(userCode);
 		}
-
-		public static void MessageMethod(int userCode, ReceiveResult result)
-		{
-			// 메시지를 result에 등록된 서버에 전달한다.
-			MessageProtocol.MESSAGE? target = result.Value as MessageProtocol.MESSAGE;
-
-			// 서버가 없다면 종료
-			if (null == target)
-				return;
-
-			// 서버를 불러온다.
-			UserServer? server = ServerContainer.Instance.GetServer(target.serverCode);
-			if (null == server)
-				return;
-			// 비동기 실행
-			server.Process(userCode, result);
-		}
-
-		
 
 		public static void DefaultMethod(int userCode, ReceiveResult result)
 		{
+			Console.WriteLine(userCode + "\t: Invalid access");
 			Client? target = LoginContainer.Instance.GetUser(userCode);
 			if (null == target)
 				return;
@@ -160,49 +403,5 @@ namespace ServerSystem
 
 			// !Protocol Toast 개발중인 기능이라 전송하기
 		}
-
-		/*
-		private static void Method(int userCode, ReceiveResult result)
-		{
-			MessageProtocol.MESSAGE? msg =  result.Value as MessageProtocol.MESSAGE;
-			if (null == msg)
-				return;
-		}
-
-		private static void Method(int userCode, ReceiveResult result)
-		{
-			MessageProtocol.MESSAGE? msg =  result.Value as MessageProtocol.MESSAGE;
-			if (null == msg)
-				return;
-		}
-
-		private static void Method(int userCode, ReceiveResult result)
-		{
-			MessageProtocol.MESSAGE? msg =  result.Value as MessageProtocol.MESSAGE;
-			if (null == msg)
-				return;
-		}
-
-		private static void Method(int userCode, ReceiveResult result)
-		{
-			MessageProtocol.MESSAGE? msg =  result.Value as MessageProtocol.MESSAGE;
-			if (null == msg)
-				return;
-		}
-
-		private static void Method(int userCode, ReceiveResult result)
-		{
-			MessageProtocol.MESSAGE? msg =  result.Value as MessageProtocol.MESSAGE;
-			if (null == msg)
-				return;
-		}
-
-		private static void Method(int userCode, ReceiveResult result)
-		{
-			MessageProtocol.MESSAGE? msg =  result.Value as MessageProtocol.MESSAGE;
-			if (null == msg)
-				return;
-		}
-		*/
 	}
 }

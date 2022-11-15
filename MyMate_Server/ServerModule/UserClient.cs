@@ -1,17 +1,20 @@
-﻿#pragma warning disable CS1998
-#pragma warning disable CS4014
+﻿#pragma warning disable CS1998		// null 역참조
+#pragma warning disable CS4014		// async
 
 using System.Data;
 using System.Net.Sockets;
-using Org.BouncyCastle.Asn1.Utilities;
+using System.Runtime.InteropServices;
+using MyMate_DB_Module;
 using Protocol;
 
 using ServerToClient;
+using static Protocol.LogoutProtocol;
+using static Protocol.SignUpProtocol;
+using Convert = System.Convert;
 using ReceiveResult = System.Collections.Generic.KeyValuePair<byte, object?>;
 
 namespace ServerSystem
 {
-
 	public class UserClient : Client
 	{
 		// 접속한 유저의 Code를 저장
@@ -25,6 +28,7 @@ namespace ServerSystem
 					return userCode.Value;
 			}
 		}
+
 		// 로그인 상태인지 확인
 		private bool isLogin;
 		// 객체에 접근하는 객체의 수를 제한(Send)
@@ -33,6 +37,9 @@ namespace ServerSystem
 		private List<byte>? bytes = new();
 		// 결과값을 임시로 저장하는 객체 변수
 		private ReceiveResult result;
+		// SQL에 접근하기 위한 객체
+		private SQL? sql;
+		private DataTable? queryResult;
 
 		public UserClient(TcpClient tcpClient) :
 			base(tcpClient)
@@ -46,12 +53,16 @@ namespace ServerSystem
 			// 최초연결시는 로그인 이전이므로 로그인 이전의 이벤트에 연결
 			// 로그인 이전이라면 지속적으로 데이터를 보내 연결상태가 맞는지 확인한다.
 			BeforeLoginEvent.ConnectCheckEvent += CheckConnection;
+
+			// SQL 객체 생성
+			sql = new();
+			queryResult = new DataTable();
 		}
 
 		// Receive로 일어나기 위한 코드
 		private void WakeUp()
 		{
-			Console.WriteLine(userCode + ": Receive event is occurred.");
+			Console.WriteLine(userCode + "\t: Receive event is occurred.");
 
 			// 연결 상태가 아니라면
 			if (!tcpClient.Connected)
@@ -75,17 +86,16 @@ namespace ServerSystem
 				Disconnection();
 			}
 
-
 			// 세마포어 획득을 시도
 			if (!semaphore.WaitOne(10))
 			{
 				return;
 			}
 
-			Console.WriteLine(userCode + ": Semaphore is assigned.");
+			Console.WriteLine(userCode + "\t: Semaphore is assigned.");
 
-			// Receive 큐가 비어있는지 확인
-			if (!IsEmpty())
+			// Receive 큐가 빌때까지 반복
+			while (!IsEmpty())
 			{
 				// 로그인 상태라면
 				if (isLogin)
@@ -101,50 +111,50 @@ namespace ServerSystem
 			}
 
 			// 세마포어 반환
-			Console.WriteLine(userCode + ": Semaphore is returned.");
+			Console.WriteLine(userCode + "\t: Semaphore is returned.\n");
 			semaphore.Release();
 		}
 
 		// 로그인 이전의 처리 (로그인, 회원가입)
 		private void BeforeLogin()
 		{
-			// 큐가 빌때까지 반복
-			while (!IsEmpty())
-			{
-				// 수신받은 정보를 받아온다.
-				result = Receive();
+			// 수신받은 정보를 받아온다.
+			result = Receive();
 
-				// 결과값이 null 이라면 다음 데이터를 읽어온다.
-				if (result.Value == null)
-				{
-					continue;
-				}
-				
-				switch (result.Key)
-				{
-					case DataType.LOGIN:
-						// 로그인 시도
-						if(Login(result))
-						{
-							// 로그인 성공시
-							Console.WriteLine(userCode + ": Success Login ");
-							
-							// 필요한 기본 데이터 전부 전송
-							BaseDataSend();
-							return;
-						}
-						break;
-					case DataType.SIGNUP:
-						// 회원가입 시도
-						if(SignUp(result))
-						{
-							Console.WriteLine(userCode + ": Success SignUp");
-						}
-						break;
-					default:
-						Console.WriteLine(userCode + ": 현재 상태에서는 사용할 수 없는 명령");
-						break;
-				}
+			switch (result.Key)
+			{
+				case DataType.LOGIN:
+					// 로그인 시도
+					if (Login(result))
+					{
+						// 로그인 성공시
+						Console.WriteLine(userCode + "\t: Login Successed\n");
+						// 필요한 기본 데이터 전부 전송
+						BaseDataSend();
+						return;
+					}
+					else
+					{
+						Console.WriteLine(": Login Failed\n");
+						Send(Generater.Generate(new ToastProtocol.TOAST(0, "Login", "Login Failed")));
+					}
+					break;
+				case DataType.SIGNUP:
+					// 회원가입 시도
+					if (SignUp(result))
+					{
+						Console.WriteLine(": SignUp Successed\n");
+						//Send(Generater.Generate(new ToastProtocol.TOAST(0, "SignUp", "SignUp Successed")));
+					}
+					else
+					{
+						Console.WriteLine(": SignUp Failed\n");
+						Send(Generater.Generate(new ToastProtocol.TOAST(0, "SignUp", "SignUp Failed")));
+					}
+					break;
+				default:
+					Console.WriteLine(": 현재 상태에서는 사용할 수 없는 명령");
+					break;
 			}
 		}
 
@@ -156,14 +166,9 @@ namespace ServerSystem
 				// 데이터를 받아 실행
 				result = Receive();
 
-				if (result.Value == null)
-				{
-					continue;
-				}
-
 				switch (result.Key)
 				{
-					case DataType.LOGOUT:
+					case DataType.LOGOUT:	
 						Logout(result);
 						break;
 					case DataType.REQUEST:
@@ -172,7 +177,9 @@ namespace ServerSystem
 					case DataType.REQUEST_RECENT_ALL:
 						RecentDataSend();
 						break;
-					//case DataType.DELETEREQUEST:
+					case DataType.DELETE_REQUEST:
+						DeleteRequest(result);
+						break;
 					default:
 						// 프로토콜을 매핑해서 실행
 						ProtocolMapping.RunProtocolMethod(userCode, result);
@@ -191,7 +198,7 @@ namespace ServerSystem
 				// 연결이 끊겼다면
 				if (!tcpClient.Connected)
 				{
-					Console.WriteLine(userCode + ": User Client is Disconnected.");
+					Console.WriteLine(userCode + "\t: User Client is Disconnected.");
 					throw new Exception();
 				}
 			}
@@ -213,30 +220,23 @@ namespace ServerSystem
 		// 해당 클라이언트가 연결되어있는 상태인지 확인
 		private void CheckConnection()
 		{
-			// 더미데이터 생성
-			List<byte> dummy = new();
-			isConnectProtocol.ISCONNECT isConnect = new(1);
-			Generater.Generate(isConnect, ref dummy);
-
 			// 데이터를 전송 한 후 상대방이 받으면 연결 유지
 			try
 			{
 				// 연결이 끊겼다면
 				if (!tcpClient.Connected)
-				{
-					Console.WriteLine(userCode + ": User Client is Disconnected.");
 					throw new Exception();
-				}
-				base.Send(dummy);
+
+				base.Send(Generater.Generate(new isConnectProtocol.ISCONNECT(1)));
 			}
-			catch (Exception e)
+			catch
 			{
 				// 컨테이너에서 삭제
 				if (null != userCode)
 					LoginContainer.Instance.EraseUser((int)userCode, this);
 
 				// 연결이 안된 상태로 소켓을 닫는다.
-				Console.WriteLine(e);
+				Console.WriteLine(userCode + "\t: User Client is Disconnected.");
 
 				Disconnection();
 				throw;
@@ -246,8 +246,7 @@ namespace ServerSystem
 		// 소켓을 닫기위한 메소드
 		public void Disconnection()
 		{
-			Console.WriteLine(userCode + ": User Client is Disconnected.");
-
+			Console.WriteLine(userCode + "\t: User Client is Disconnected.");
 			// 로그인 이전 이벤트 끊기
 			BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
 			// Receive 이벤트를 끊는다.
@@ -255,6 +254,18 @@ namespace ServerSystem
 			// Recevie를 종료한다.
 			StopReceive();
 			
+			if(isLogin && userCode != null)
+			{
+				Console.WriteLine(userCode + "\t: Delete a User");
+				// 컨테이너에 존재한다면
+				if (LoginContainer.Instance.IsLogin((int)userCode))
+				{
+					// 컨테이너에서 삭제
+					if (null != userCode)
+						LoginContainer.Instance.EraseUser((int)userCode, this);
+				}
+			}
+
 			// 로그인 코드를 초기화
 			isLogin = false;
 			userCode = null;
@@ -263,23 +274,21 @@ namespace ServerSystem
 		// 최근 3일내의 정보를 가져와 보낸다.
 		private void RecentDataSend()
 		{
-			Console.WriteLine(userCode + ": Recent data all send");
+			Console.WriteLine(userCode + "\t: Recent data all send");
 			//DateSendByTime(null,new(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day - 3));
 
 			// Message
 			// 
-
-
 		}
 
 		// 최초 구동시 필요한 데이터를 뽑아내 전부 전달
 		async private void BaseDataSend()
 		{
-			Console.WriteLine( userCode + " : BaseData Sending");
+			Console.WriteLine( userCode + "\t: BaseData Sending");
 			// !Protocol Toast 기반데이터 전송 시작
 
 			// 유저 채널 리스트 전송
-			await SQLUsesrRequest.UserChnnalRequest(this, UserCode);
+			await SQLUsesrRequest.UserChannelRequest(this, UserCode);
 
 			// 서버리스트 전송
 			await SQLUsesrRequest.ServerRequest(this, UserCode);
@@ -302,11 +311,13 @@ namespace ServerSystem
 		async private void RequestDataSend( ReceiveResult result )
 		{
 			RequestProtocol.REQUEST? request = result.Value as RequestProtocol.REQUEST;
-
+			Console.WriteLine(userCode + "\t: DataSend Request");
+			
 			if (request == null)
 				return;
+			Console.WriteLine("DataType\t: {}", request.dataType);
 
-			switch(request.dataType)
+			switch (request.dataType)
 			{
 				case DataType.USER:
 					SQLUsesrRequest.UserRequest(this, request.userCode);
@@ -336,6 +347,53 @@ namespace ServerSystem
 					SQLUsesrRequest.UserFriend(this, request.userCode);
 					break;
 				default:
+					Send(Generater.Generate(new ToastProtocol.TOAST(0,"Request 오류","지원하지 않는 Request 입니다.")));
+					break;
+			}
+		}
+
+		// 요청 데이터 삭제
+		async private void DeleteRequest(ReceiveResult result)
+		{
+			Console.WriteLine(userCode + "\t: Delete Request");
+			DeleteRequestProtocol.DELETE_REQUEST? request = result.Value as DeleteRequestProtocol.DELETE_REQUEST;
+			if (request == null)
+				return;
+			Console.WriteLine("DataType\t: {}", request.dataType);
+
+			switch (request.dataType)
+			{
+				case DataType.USER:
+					SQLUsesrRequest.UserRequest(this, request.userCode);
+					break;
+				case DataType.SERVER:
+					SQLUsesrRequest.ServerRequest(this, request.userCode, request.serverCode);
+					break;
+				case DataType.CHNNEL:
+					if(request.serverCode != 0)
+						SQLUsesrRequest.ServerChannelRequest(this, request.userCode, request.serverCode);
+					else
+						SQLUsesrRequest.UserChannelRequest(this, request.userCode, request.serverCode);
+					break;
+				case DataType.MESSAGE:
+					SQLUsesrRequest.ServerMessageRequest(this, request.userCode, request.serverCode, request.channelCode, request.startTime, request.endTime);
+					break;
+				case DataType.CALENDER:
+					if (request.serverCode != 0)
+						SQLUsesrRequest.ServerCalenderRequest(this, request.userCode, request.serverCode, request.channelCode);
+					else
+						SQLUsesrRequest.UserCalenderRequest(this, request.userCode, request.channelCode);
+					break;
+				case DataType.CHECKLIST:
+					if (request.serverCode != 0)
+						SQLUsesrRequest.ServerProjectRequest(this, request.userCode, request.serverCode, request.channelCode);
+					else
+						SQLUsesrRequest.UserProjectRequest(this, request.userCode, request.channelCode);
+					break;
+				case DataType.FRIEND:
+					SQLUsesrRequest.UserFriend(this, request.userCode);
+					break;
+				default:
 					// !Protocol Toast 지원하지 않는 Request 입니다.
 					break;
 			}
@@ -345,124 +403,103 @@ namespace ServerSystem
 		private bool Login(ReceiveResult result)
 		{
 			var login = result.Value as LoginProtocol.LOGIN;
-
 			if (login == null)
 			{
+				Console.WriteLine("no Data");
 				return false;
 			}
 
-			Console.WriteLine(userCode + ": Logging in...");
-			Console.WriteLine(userCode + ": ID \"" + login.id + "\" has been attempted.");
+			Console.WriteLine("Attempt\t: Logging in...");
+			Console.WriteLine("ID \"" + login.id + "\" has been attempted.");
 
-			// !SQL 로그인 시도
+			// UserParm 객체 생성
+			UserParm userParm = new UserParm() { id = login.id, pwd = login.pw };
+
+			// UserParm 값 할당
+			// userParm.id = login.id;
+			// userParm.pwd = login.pw;
+
+			// 로그인 결과 받아올 DataTable 객체 생성
+			//DataTable queryResult = new DataTable();
+
+			// 로그인 query 실행
+			// queryResult = sql.resultConnectDB((object)userParm,"Login");
+
+			queryResult = sql.resultConnectDB(userParm, "Login");
+
+			Console.WriteLine("DB Result\t: " + queryResult.Rows[0][0]);
 
 			// 로그인 성공 시 작동할 부분
-			if (true)
+			if (queryResult.Rows[0][0] is true)
 			{
-				// 로그인 컨테이너 정보를 가져옴
-				var container = LoginContainer.Instance;
+				// 프로토콜 객체 생성
+				LoginUserProtocol.LOGINUSER loginUser = new();
 
 				// 로그인 이전 이벤트를 끊는다.
 				BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
 
 				// 유저의 데이터를 전송 가능한 형태로 집어 넣는다.
-				LoginUserProtocol.LOGINUSER user = new LoginUserProtocol.LOGINUSER();
-				user.userCode = 10;
-				user.name = "admin";
-				user.nickname = "poro";
-				user.email = "angus99@naver.com";
-				user.phone = "010-8355-3460";
-					//LoginUserProtocol.LOGINUSER(10, "admin", "poro", "angus99@naver.com", "010-8355-3460");
+				//LoginUserProtocol.LOGINUSER user = new LoginUserProtocol.LOGINUSER();
+
+				// 유저 코드 가져오는 query 실행 및 유저 코드 할당
+				queryResult = sql.resultConnectDB((object)userParm, "GetUserCode");
 
 				// 로그인 정보 삽입
-				userCode = 10;
 				isLogin = true;
+				this.userCode = Convert.ToInt32(queryResult.Rows[0]["U_code"]);
 
-				// 로그인 컨테이너에 유저 정보 등록
-				container.RegistUser((int)userCode, this);
+				// 로그인 컨테이너 등록
+				LoginContainer.Instance.RegistUser((int)userCode, this);
+
+				// 유저 정보 가져기 위해서 UserParm 값 할당
+				userParm.dataFormat = null;
+
+				// 유저 정보 가져오는 query 실행
+				queryResult = sql.resultConnectDB((object)userParm, "GetUser");
+
+				// 보낼 정보 세팅
+				loginUser.Set(
+					(int)this.userCode,
+					"id",
+					queryResult.Rows[0]["U_name"].ToString(),
+					queryResult.Rows[0]["U_email"].ToString(),
+					queryResult.Rows[0]["U_email"].ToString(),
+					queryResult.Rows[0]["U_phone"].ToString(), 
+					"context",
+					DateTime.Now);
 
 				// 유저에게 정보 전송
-				Send(Generater.Generate(user));
-				Console.WriteLine(userCode + ": Login succeeded.");
-
-				// 클라이언트 프로그램 실행에 필요한 데이터를 전부 쏴준다.
-				BaseDataSend();
-
+				Console.WriteLine(userCode + " Login Data Sending");
+				Send(Generater.Generate(loginUser));
 				return true;
 			}
 
-			/* SQL 코드로 로그인을 시도하는 부분
-			SQL sql = new();
-
-			if (sql.noResultConnectDB(login.id, login.pw, sql.Login))
-			{
-				DataTable dataTable = new();
-
-				dataTable = sql.resultConnectDB(login.id, sql.GetUserinfo);
-
-				if (dataTable == null)
-				{
-					bytes = new();
-					Generater.Generate("ID does not exist.", ref bytes);
-					SendData(bytes);
-				}
-				else
-				{
-					isLogin = true;
-					userCode = (int)dataTable.Rows[0]["U_code"];
-
-					var container = LoginContainer.Instance;
-					
-					container.registUser((int)userCode, this);
-
-					var id = dataTable.Rows[0]["U_id"].ToString();
-					var name = dataTable.Rows[0]["U_name"].ToString();
-					var nickname = dataTable.Rows[0]["U_Nickname"].ToString();
-					var phone = dataTable.Rows[0]["U_phone"].ToString();
-
-					UserInfoProtocol.User user = new((int)userCode, id, name, nickname, phone);
-					bytes = new();
-					Generater.Generate(user, ref bytes);
-					SendData(bytes);
-
-					BeforeLoginEvent.ConnectCheckEvent -= CheckConnection;
-					
-					Console.WriteLine(userCode + ": Login succeeded.");
-				}
-			}
-			*/
+			return false;
 		}
 
 		// 로그아웃 메소드
-		// 로그인 상태의 클라이언트를 로그인 이전 상태로 돌린다.
 		private void Logout(ReceiveResult result)
 		{
-			Console.WriteLine("로그아웃 시도");
+			// 로그인 상태의 클라이언트를 로그인 이전 상태로 돌린다.
+			Console.WriteLine(userCode + "\t: Attempt Logout");
 			var logout = result.Value as LogoutProtocol.LOGOUT;
 
+			// 로그아웃 객체가 없거나 유저코드가 갖지 않다면 나간다.
 			if (logout == null)
-			{
 				return;
-			}
-
 			if (logout.usercode != this.userCode)
-			{
 				return;
-			}
 
-			// 컨테이너에 존재하는지 확인
-			var loginContainer = LoginContainer.Instance;
-			if (loginContainer.IsLogin(logout.usercode))
+			// 컨테이너에 존재한다면
+			if (LoginContainer.Instance.IsLogin(logout.usercode))
 			{
 				// 컨테이너에서 삭제
 				if (null != userCode)
 					LoginContainer.Instance.EraseUser((int)userCode, this);
 			}
 
-			Console.WriteLine("로그아웃 시작");
-
 			// 메시지 전송
-			Send(Generater.Generate("You have been logged out."));
+			Send(Generater.Generate(userCode + "\t: You have been logged out."));
 
 			// 객체 초기화
 			isLogin = false;
@@ -472,32 +509,37 @@ namespace ServerSystem
 			BeforeLoginEvent.ConnectCheckEvent += CheckConnection;
 
 			// !Protocol Success 프로토콜 전송
-
-			// !Protocol Toast 메시지 "로그아웃이 되었습니다."
-			// Toast 메시지 전송
+			Send(Generater.Generate(new ToastProtocol.TOAST(0, "로그아웃", "로그아웃 되었습니다.")));
 		}
 
 		// 회원가입 메소드
 		private bool SignUp(ReceiveResult result)
 		{
-			Console.WriteLine("회원가입 시도");
 			SignUpProtocol.SiginUp? siginUp = result.Value as SignUpProtocol.SiginUp;
+			UserParm userParm = new UserParm();
+			Console.WriteLine(userCode + ": Attempt SignUp ");
 
 			if (null == siginUp)
 				return false;
-			ToastProtocol.TOAST toast = new(0, "회원가입 시도");
-			Send(Generater.Generate(toast));
 
-			// !SQL 회원가입 
-			if (true) // (SQL.SIGNUP())
+			// UserParm 객체 값 할당
+			userParm.id = siginUp.id;
+			userParm.pwd = siginUp.password;
+			userParm.name = siginUp.name;
+			userParm.nick = siginUp.nickname;
+			userParm.email = siginUp.email;
+			userParm.phone = siginUp.phone;
+
+			// 유효성 검사에 성공했다면
+			if (sql.checkValue((object)userParm))
 			{
-				// 성공시 
-				// !Protocol Toast 회원가입 성공
-				toast.content = "회원가입 시도";
-				Send(Generater.Generate(toast));
-				return true;
+				if (sql.noResultConnectDB((object)userParm, "Signin")) // (SQL.SIGNUP())
+				{
+					// 결과를 토스트메시지로 전송
+					Send(Generater.Generate(new ToastProtocol.TOAST(0, "회원가입", "회원가입에 성공했습니다.\nid : "+siginUp.id)));
+					return true;
+				}
 			}
-
 			return false;
 		}
 	}
