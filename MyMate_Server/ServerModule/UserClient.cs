@@ -333,13 +333,13 @@ namespace ServerSystem
 					SQLUsesrRequest.ServerMessageRequest(this, request.userCode, request.serverCode, request.channelCode, request.startTime, request.endTime);
 					break;
 				case DataType.CALENDER:
-					if (request.serverCode == 0)
+					if (request.serverCode != 0)
 						SQLUsesrRequest.ServerCalenderRequest(this, request.userCode, request.serverCode, request.channelCode);
 					else
 						SQLUsesrRequest.UserCalenderRequest(this, request.userCode, request.channelCode);
 					break;
 				case DataType.CHECKLIST:
-					if (request.serverCode == 0)
+					if (request.serverCode != 0)
 						SQLUsesrRequest.ServerProjectRequest(this, request.userCode, request.serverCode, request.channelCode);
 					else
 						SQLUsesrRequest.UserProjectRequest(this, request.userCode, request.channelCode);
@@ -463,7 +463,8 @@ namespace ServerSystem
                 // 보낼 정보 세팅
                 loginUser.Set(
 					(int)this.userCode,
-					queryResult.Rows[0]["U_name"].ToString(),
+                    queryResult.Rows[0]["U_id"].ToString(),
+                    queryResult.Rows[0]["U_name"].ToString(),
                     queryResult.Rows[0]["U_nick"].ToString(),
                     queryResult.Rows[0]["U_email"].ToString(),
 					queryResult.Rows[0]["U_phone"].ToString(),

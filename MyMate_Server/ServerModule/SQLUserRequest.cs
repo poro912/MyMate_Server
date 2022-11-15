@@ -46,7 +46,8 @@ namespace ServerSystem
 
 				userProfile.Set(
 					userCode,
-					queryResult.Rows[0]["U_name"].ToString(),
+                    queryResult.Rows[0]["U_id"].ToString(),
+                    queryResult.Rows[0]["U_name"].ToString(),
 					queryResult.Rows[0]["U_nick"].ToString(),
 					queryResult.Rows[0]["U_email"].ToString(),
 					queryResult.Rows[0]["U_phone"].ToString(),
@@ -66,7 +67,8 @@ namespace ServerSystem
 				{
 					userProfile.Set(
 					userCode,
-					queryResult.Rows[i]["U_name"].ToString(),
+                    queryResult.Rows[i]["U_id"].ToString(),
+                    queryResult.Rows[i]["U_name"].ToString(),
 					queryResult.Rows[i]["U_nick"].ToString(),
 					queryResult.Rows[i]["U_email"].ToString(),
 					queryResult.Rows[i]["U_phone"].ToString(),
@@ -86,7 +88,8 @@ namespace ServerSystem
 
 				userProfile.Set(
 					userCode,
-					queryResult.Rows[0]["U_name"].ToString(),
+                    queryResult.Rows[0]["U_id"].ToString(),
+                    queryResult.Rows[0]["U_name"].ToString(),
 					queryResult.Rows[0]["U_nick"].ToString(),
 					queryResult.Rows[0]["U_email"].ToString(),
 					queryResult.Rows[0]["U_phone"].ToString(),
@@ -122,7 +125,7 @@ namespace ServerSystem
                 for (int i = 0; i < queryResult.Rows.Count; i++)
 				{
 					channel.Set(
-						Convert.ToInt32(queryResult.Rows[i]["s_code"]),
+						0,
 						Convert.ToInt32(queryResult.Rows[i]["ch_code"]),
 						queryResult.Rows[i]["ch_title"].ToString(),
 						Convert.ToInt32(queryResult.Rows[i]["state"]));
@@ -139,7 +142,7 @@ namespace ServerSystem
                 queryResult = sql.resultConnectDB(userChannelParm, queryList.GetUserChannel);
 
 				channel.Set(
-					Convert.ToInt32(queryResult.Rows[0]["s_code"]),
+					0,
 					Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
 					queryResult.Rows[0]["ch_title"].ToString(),
 					Convert.ToInt32(queryResult.Rows[0]["state"]));
@@ -297,9 +300,12 @@ namespace ServerSystem
 
 			Protocol.ServerProtocol.Server server = new();
 
-			if (serverCode == 0)
+            ServerParm serverParm = new();
+            DataTable tempResult = new();
+
+            if (serverCode == 0)
 			{
-				// !SQL 접속되어 있는 모든 서버에 대한 정보 전송
+                // !SQL 접속되어 있는 모든 서버에 대한 정보 전송
                 // 접속되어있는 모든 서버에 대한 정보 전송
 
                 serverUserParm.serverCode = 0;
@@ -309,11 +315,14 @@ namespace ServerSystem
 
 				for (int i = 0; i < queryResult.Rows.Count; i++)
 				{
+					serverParm.serverCode = Convert.ToInt32(queryResult.Rows[i]["s_code"]);
+					tempResult = sql.resultConnectDB(serverParm, queryList.GetServer);
 
 
-					server.Set(Convert.ToInt32(queryResult.Rows[i]["s_code"]),
-                        queryResult.Rows[i]["s_code"].ToString(),
-						0
+                    server.Set(Convert.ToInt32(queryResult.Rows[i]["s_code"]),
+                        tempResult.Rows[0]["S_title"].ToString(),
+                        Convert.ToInt32(tempResult.Rows[0]["S_admin_code"]),
+                        Convert.ToBoolean(tempResult.Rows[0]["is_signle"])
 						);	
 					user.Send(Generater.Generate(server));
 				}
@@ -328,10 +337,14 @@ namespace ServerSystem
 
                 queryResult = sql.resultConnectDB(serverUserParm,queryList.GetServeruser);
 
+				serverParm.serverCode = Convert.ToInt32(queryResult.Rows[0]["s_code"]);
+				tempResult = sql.resultConnectDB(serverParm, queryList.GetServer);
+
                 server.Set(Convert.ToInt32(queryResult.Rows[0]["s_code"]),
-                        queryResult.Rows[0]["s_code"].ToString(),
-                        0
-                        );
+                       tempResult.Rows[0]["S_title"].ToString(),
+                       Convert.ToInt32(tempResult.Rows[0]["S_admin_code"]),
+                       Convert.ToBoolean(tempResult.Rows[0]["is_signle"])
+                       );
                 user.Send(Generater.Generate(server));
 			}
             return true;
@@ -347,7 +360,7 @@ namespace ServerSystem
 
 			DataTable queryResult = new();
 
-			ChannelProtocol.CHNNEL channel = new();
+			ChannelProtocol.CHANNEL channel = new();
 
                 // SQL 서버 채널 정보 전송
                 channelParm.serverCode = serverCode;
