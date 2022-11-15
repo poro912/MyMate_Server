@@ -57,7 +57,7 @@ namespace ServerSystem
 			// user에 대해 모든 사람의 정보를 전송
 			if(0 == userCode)
 			{
-				userParm.userCode = userCode;
+				userParm.userCode = userCode;	// 모든 유저
                 userParm.dataFormat = null;
 
                 queryResult = sql.resultConnectDB(userParm, queryList.GetUser);
@@ -269,10 +269,6 @@ namespace ServerSystem
 
                 queryResult = sql.resultConnectDB(userChecklistParm, queryList.GetUserChecklist);
 
-				for (int i = 0; i < 10; i++)
-				{
-
-
 					checklist.Set(
 						Convert.ToInt32(queryResult.Rows[0]["chk_code"]),
 						0,
@@ -283,7 +279,6 @@ namespace ServerSystem
 						Convert.ToBoolean(queryResult.Rows[0]["is_checked"]),
 						Convert.ToBoolean(queryResult.Rows[0]["is_private"]));
 					user.Send(Generater.Generate(checklist));
-				}
 			}
 			return true;
 		}
@@ -383,7 +378,7 @@ namespace ServerSystem
 			{
                 // SQL 서버 채널 정보 전송
                 channelParm.serverCode = serverCode;
-                channelParm.channelCode = 0;
+                channelParm.channelCode = 0;	// 채널 코드 없음
 
                 queryResult = sql.resultConnectDB(channelParm, queryList.GetChannel);
 
@@ -552,19 +547,12 @@ namespace ServerSystem
 			// !SQL 서버의 해당 채널의 메시지들을 받아옴
             SQL sql = new();
 
-			MessageParm messageParm = new MessageParm();
+			MessageParm messageParm = new();
 
-			DataTable queryResult = new DataTable();
+			DataTable queryResult = new();
 
 			MessageProtocol.MESSAGE msg = new();
 
-			messageParm.serverCode = serverCode;
-            messageParm.channelCode = channel;
-			messageParm.messageCode = null;
-
-            
-
-			queryResult = sql.resultConnectDB((object)messageParm, "GetMessage");
 			if (start == null)
 			{
 				start = new(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day - 3);
@@ -576,27 +564,47 @@ namespace ServerSystem
 
 			if(channel == 0)
 			{
-				// !SQL 모든 채널 정보를 받아옴
-				for (int i = 0; i < 10; i++)
+                messageParm.serverCode = serverCode;
+                messageParm.channelCode = 0;
+                messageParm.messageCode = 0;
+
+                queryResult = sql.resultConnectDB(messageParm, queryList.GetMessage);
+
+                // !SQL 모든 채널 정보를 받아옴
+                for (int i = 0; i < queryResult.Rows.Count; i++)
 				{
 
 
-					msg.Set(0,0,0,0,"",DateTime.Now,false
-						);
+					msg.Set(Convert.ToInt32(queryResult.Rows[i]["msg_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["s_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["ch_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["creater"]),
+                        queryResult.Rows[i]["content"].ToString(),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[i]["start_time"])),
+                        Convert.ToBoolean(queryResult.Rows[i]["is_private"])
+                        );
 					user.Send(Generater.Generate(msg));
 				}
 			}
 			else
 			{
-				// !SQL 특정 채널 정보를 받아옴
-				for (int i = 0; i < 10; i++)
-				{
+                // !SQL 특정 채널 정보를 받아옴
 
+                messageParm.serverCode = serverCode;
+                messageParm.channelCode = channel;
+                messageParm.messageCode = 0;
 
-					msg.Set(0, 0, 0, 0, "", DateTime.Now, false
-						);
-					user.Send(Generater.Generate(msg));
-				}
+                queryResult = sql.resultConnectDB(messageParm, queryList.GetMessage);
+
+                msg.Set(Convert.ToInt32(queryResult.Rows[0]["msg_code"]),
+                        Convert.ToInt32(queryResult.Rows[0]["s_code"]),
+                        Convert.ToInt32(queryResult.Rows[0]["ch_code"]),
+                        Convert.ToInt32(queryResult.Rows[0]["creater"]),
+                        queryResult.Rows[0]["content"].ToString(),
+                        new DateTime(Convert.ToInt32(queryResult.Rows[0]["start_time"])),
+                        Convert.ToBoolean(queryResult.Rows[0]["is_private"])
+                        );
+                    user.Send(Generater.Generate(msg));
 			}
             return true;
 		}
@@ -608,39 +616,52 @@ namespace ServerSystem
             // !SQL 해당 유저에 대한 친구 목록을 받아 전송
             SQL sql = new();
 
-			FriendParm friendParm = new FriendParm();
+			FriendParm friendParm = new();
 
-			DataTable queryResult = new DataTable();
+			DataTable queryResult = new();
 
 			FriendProtocol.FRIEND friend = new();
 
-			friendParm.userCode = userCode;
-			friendParm.friendCode = null;
-
-            queryResult = sql.resultConnectDB((object)friendParm, "GetFriend");
+			
 
 			if(0 == userCode)
 			{
-				// 모든 친구 데이터를 전송
-				// !SQL
+                // 모든 친구 데이터를 전송
+                // !SQL
+                friendParm.userCode = userCode;
+                friendParm.friendCode = 0;
 
-				for (int i = 0; i < 10; i++)
+                queryResult = sql.resultConnectDB(friendParm, queryList.GetFriend);
+
+                for (int i = 0; i < queryResult.Rows.Count; i++)
 				{
 
 
-					friend.Set(0,0,"",false,false
-						);
+					friend.Set(Convert.ToInt32(queryResult.Rows[i]["u_code"]),
+                        Convert.ToInt32(queryResult.Rows[i]["fr_code"]),
+                        queryResult.Rows[i]["nick"].ToString(),
+                        Convert.ToBoolean(queryResult.Rows[i]["fr_hide"]),
+                        Convert.ToBoolean(queryResult.Rows[i]["fr_block"])
+                        );
 					user.Send(Generater.Generate(friend));
 				}
 			}
 			else
 			{
-				// !SQL
-				// 하나의 친구 데이터를 전송
+                // !SQL
+                // 하나의 친구 데이터를 전송
+                friendParm.userCode = userCode;
+                friendParm.friendCode = null;	// 친구 코드 없음
 
-				friend.Set(0, 0, "", false, false
-						);
-				user.Send(Generater.Generate(friend));
+                queryResult = sql.resultConnectDB(friendParm, queryList.GetFriend);
+
+                friend.Set(Convert.ToInt32(queryResult.Rows[0]["u_code"]),
+                        Convert.ToInt32(queryResult.Rows[0]["fr_code"]),
+                        queryResult.Rows[0]["nick"].ToString(),
+                        Convert.ToBoolean(queryResult.Rows[0]["fr_hide"]),
+                        Convert.ToBoolean(queryResult.Rows[0]["fr_block"])
+                        );
+                user.Send(Generater.Generate(friend));
 			}
 			return true;
 		}
