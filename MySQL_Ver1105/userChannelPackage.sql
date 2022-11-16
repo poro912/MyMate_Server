@@ -25,13 +25,13 @@ p_ch_code int
 )
 DETERMINISTIC
 begin
-	if (p_u_code IS NULL or p_u_code = 0) then
-		select u_code, ch_code,  ch_title, state, is_private, is_deleted from u_channel_tb where ch_code = p_ch_code;
-	elseif (p_ch_code IS NULL or p_ch_code = 0) then
-		select u_code, ch_code,  ch_title, state, is_private, is_deleted from u_channel_tb where u_code = p_u_code;
-	else
-		select u_code, ch_code, ch_title, state, is_private, is_deleted from u_channel_tb where u_code = p_u_code and ch_code = p_ch_code;
-	end if;
+	if ((p_chk_code IS NULL or p_chk_code = 0) and (p_ch_code IS NULL or p_ch_code = 0)) then 
+		select u_code, ch_code, chk_code, content, start_time, end_time, checked, is_private, is_deleted from u_checklist_tb where u_code = p_u_code;
+	elseif (p_chk_code IS NULL or p_chk_code = 0 ) then 
+		select u_code, ch_code, chk_code,  content, start_time, end_time, checked, is_private, is_deleted from u_checklist_tb where u_code = p_u_code and ch_code = p_ch_code;
+    else
+		select u_code, ch_code, chk_code, content, start_time, end_time, checked, is_private, is_deleted from u_checklist_tb where u_code = p_u_code and ch_code = p_ch_code and chk_code = p_chk_code;
+    end if;
 end $$
 
 # update user channel procedure

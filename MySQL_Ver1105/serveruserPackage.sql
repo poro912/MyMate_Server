@@ -17,7 +17,9 @@ DELIMITER $$
 create procedure select_server_user(p_s_code int, p_u_code int)
 DETERMINISTIC
 begin
-	if (p_s_code IS NULL or p_s_code = 0) then 
+	if ((p_s_code IS NULL or p_s_code = 0) and (p_u_code IS NULL or p_u_code = 0)) then 
+		select s_code, u_code, cal_is_private, is_deleted from server_user_tb;
+	elseif (p_s_code IS NULL or p_s_code = 0) then 
 		select s_code, u_code, cal_is_private, is_deleted from server_user_tb where u_code = p_u_code ;
     elseif (p_u_code IS NULL or p_u_code = 0) then
 		select s_code, u_code, cal_is_private, is_deleted from server_user_tb where s_code = p_s_code ;

@@ -24,7 +24,9 @@ p_ch_code int
 )
 DETERMINISTIC
 begin
-	if (p_s_code IS NULL or p_s_code = 0) then
+	if ((p_s_code IS NULL or p_s_code = 0) and (p_ch_code IS NULL or p_ch_code = 0)) then
+		select s_code, ch_code, ch_title, state, is_deleted from channel_tb;
+	elseif (p_s_code IS NULL or p_s_code = 0) then
 		select s_code, ch_code, ch_title, state, is_deleted from channel_tb where ch_code = p_ch_code;
 	elseif (p_ch_code IS NULL or p_ch_code = 0) then
 		select s_code, ch_code, ch_title, state, is_deleted from channel_tb where s_code = p_s_code;

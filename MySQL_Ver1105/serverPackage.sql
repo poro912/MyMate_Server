@@ -20,9 +20,9 @@ create procedure select_server(p_S_code int)
 DETERMINISTIC
 BEGIN
 	if(p_S_code is NULL or p_S_code = 0) then
-		select S_title, S_admin_code, is_single, is_deleted from server_tb;
+		select S_code, S_title, S_admin_code, is_single, is_deleted from server_tb;
 	else
-		select S_title, S_admin_code, is_single, is_deleted from server_tb where S_code = p_S_code;
+		select S_code, S_title, S_admin_code, is_single, is_deleted from server_tb where S_code = p_S_code;
     end if;
 END $$ 
 
