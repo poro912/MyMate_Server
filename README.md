@@ -1,9 +1,6 @@
 # MyMate_Server
 졸업작품인 MyMate의 서버 프로그램.
 
-# MyMate_NetWork
-유한대학교 졸업작품 프로젝트관리 및 채팅 앱 네트워크 모듈
-
 ## MyMate
 [poro912/MyMate](https://github.com/poro912/MyMate)
 
